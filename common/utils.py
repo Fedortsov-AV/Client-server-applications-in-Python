@@ -17,5 +17,7 @@ def get_message(sock: socket.socket):
         byte_json_msg = sock.recv(MAX_LEN_MSG)
         json_msg = byte_json_msg.decode(ENCODE)
         data = json.loads(json_msg)
-        return data
+        if isinstance(data, dict):
+            return data
+        return print('Получена неверная структура JSON')
     return print('Неверный тип данных передан в аргументы функции sget_message(sock: socket.socket)')

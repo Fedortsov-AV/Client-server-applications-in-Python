@@ -13,10 +13,10 @@ RESPONCE = 'RESPONCE'
 ALERT = 'ALERT'
 
 ANS_200 = {
-                RESPONCE: 200,
-                ALERT: 'ОК'
-            }
+    RESPONCE: 200,
+    ALERT: 'ОК'
+}
 ANS_400 = {
-        RESPONCE: 400,
-        ALERT: 'Неправильный запрос/JSON-объект'
-    }
+    RESPONCE: 400,
+    ALERT: 'Неправильный запрос/JSON-объект'
+}

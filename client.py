@@ -13,6 +13,13 @@ def presence_msg():
     return msg
 
 
+def parcing_msg(input_date: dict):
+    if isinstance(input_date, dict):
+        if input_date[RESPONCE] and input_date[ALERT]:
+            return print(f'{input_date[RESPONCE]} : {input_date[ALERT]}')
+    return print()
+
+
 if VALID_ADR.findall(sys.argv[1]):
     ADDRES = VALID_ADR.findall(sys.argv[1])[0]
 else:
@@ -32,5 +39,5 @@ SRVSOCK = socket(AF_INET, SOCK_STREAM)
 SRVSOCK.connect((ADDRES, PORT))
 PRESENCE_MSG = presence_msg()
 send_message(PRESENCE_MSG, SRVSOCK)
-DATA = get_message(SRVSOCK)
-print(DATA[RESPONCE], DATA[ALERT])
+data = get_message(SRVSOCK)
+parcing_msg(data)
