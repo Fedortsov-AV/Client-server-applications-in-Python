@@ -8,7 +8,8 @@ def send_message(msg: dict, sock: socket.socket):
     if isinstance(msg, dict) and isinstance(sock, socket.socket):
         json_msg = json.dumps(msg).encode(ENCODE)
         sock.send(json_msg)
-    return print('Неверный тип данных передан в аргументы функции send_message(msg: dict, sock: socket.socket)')
+    else:
+        return print('Неверный тип данных передан в аргументы функции send_message(msg: dict, sock: socket.socket)')
 
 def get_message(sock):
     byte_json_msg = sock.recv(MAX_LEN_MSG)
