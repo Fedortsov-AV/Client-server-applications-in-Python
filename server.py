@@ -2,13 +2,13 @@ import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER
 
 
 def parcing_msg(input_date: dict):
     if isinstance(input_date, dict):
-        if input_date['ACTION'] and input_date['USER']:
-            if input_date['ACTION'] == 'presence':
+        if input_date[ACTION] and input_date[USER]:
+            if input_date[ACTION] == 'presence':
                 return ANS_200
         return ANS_400
     return ANS_400
