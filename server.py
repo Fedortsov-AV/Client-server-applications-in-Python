@@ -1,9 +1,21 @@
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
-from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, MAX_LEN_MSG, VALID_ADR, VALID_PORT
 
-print(sys.argv)
+from common.utils import get_message, send_message
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT
+
+
+def parcing_msg(msg: dict):
+    if msg['ACTION'] == 'presence':
+        return {
+            'responce': 200,
+            'alert': 'ОК'
+        }
+    return {
+        'responce': 400,
+        'alert': 'Неправильный запрос/JSON-объект'
+    }
+
 
 if '-a' in sys.argv and VALID_ADR.findall(sys.argv[sys.argv.index('-a') + 1]):
     ADDRES = VALID_ADR.findall(sys.argv[sys.argv.index('-a') + 1])[0]
@@ -33,7 +45,7 @@ while True:
     client, addr = s.accept()
     print("Запрос на соединение от ", addr)
     data = get_message(client)
-    print('Сообщение: ', data, ', было отправлено клиентом: ', addr)
-    msg = "Тут функция формирования ответа"
+    print('Сообщение: ', data, ', было отправлено клиентом: ', addr, 'type data=', type(data))
+    msg = parcing_msg(data)
     send_message(msg, client)
     client.close()
