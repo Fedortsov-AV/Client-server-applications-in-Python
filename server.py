@@ -5,10 +5,10 @@ from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400
 
 
-def parcing_msg(msg: dict):
-    if isinstance(msg, dict):
-        if msg['ACTION'] and msg['USER']:
-            if msg['ACTION'] == 'presence':
+def parcing_msg(input_date: dict):
+    if isinstance(input_date, dict):
+        if input_date['ACTION'] and input_date['USER']:
+            if input_date['ACTION'] == 'presence':
                 return ANS_200
         return ANS_400
     return ANS_400
@@ -31,7 +31,7 @@ if '-p' in sys.argv and VALID_PORT.findall(sys.argv[sys.argv.index('-p') + 1]):
 else:
     PORT = int(DEFAULT_PORT)
     print(
-        'Установлен порт %d, в строке параметров отсутствует задание порта соответствующее шаблону' % (DEFAULT_PORT))
+        'Установлен порт %d, в строке параметров отсутствует задание порта соответствующее шаблону' % DEFAULT_PORT)
 
 print('%s:%d' % (ADDRES, PORT))
 s = socket(AF_INET, SOCK_STREAM)
