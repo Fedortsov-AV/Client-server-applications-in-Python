@@ -41,8 +41,11 @@ s.listen(5)
 while True:
     client, addr = s.accept()
     print("Запрос на соединение от ", addr)
-    data = get_message(client)
-    print('Сообщение: ', data, ', было отправлено клиентом: ', addr, 'type data=', type(data))
-    msg = parcing_msg(data)
-    send_message(msg, client)
-    client.close()
+    try:
+        data = get_message(client)
+        print('Сообщение: ', data, ', было отправлено клиентом: ', addr, 'type data=', type(data))
+        msg = parcing_msg(data)
+        send_message(msg, client)
+        client.close()
+    except ConnectionResetError:
+        client.close()
