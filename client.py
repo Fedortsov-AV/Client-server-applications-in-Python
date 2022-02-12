@@ -1,15 +1,15 @@
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
 from common.utils import send_message, get_message
-from common.variables import DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, MAX_LEN_MSG
+from common.variables import DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, MAX_LEN_MSG, ACTION, USER
 
 print(sys.argv)
 print(VALID_ADR.findall(sys.argv[1]))
 
 def presence_msg():
     msg = {
-        'ACTION': 'presence',
-        'USER': 'guest'
+        ACTION : 'presence',
+        USER : 'guest'
     }
     return msg
 
@@ -33,6 +33,7 @@ print('%s:%d' % (ADDRES, PORT))
 SRVSOCK = socket(AF_INET, SOCK_STREAM)
 SRVSOCK.connect((ADDRES, PORT))
 PRESENCE_MSG = presence_msg()
+PRESENCE_MSG = 'ACTION'
 send_message(PRESENCE_MSG, SRVSOCK)
 DATA = get_message(SRVSOCK)
 print(DATA)

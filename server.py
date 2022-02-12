@@ -2,19 +2,16 @@ import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400
 
 
 def parcing_msg(msg: dict):
-    if msg['ACTION'] == 'presence':
-        return {
-            'responce': 200,
-            'alert': 'ОК'
-        }
-    return {
-        'responce': 400,
-        'alert': 'Неправильный запрос/JSON-объект'
-    }
+    if isinstance(msg, dict):
+        if msg['ACTION'] and msg['USER']:
+            if msg['ACTION'] == 'presence':
+                return ANS_200
+        return ANS_400
+    return ANS_400
 
 
 if '-a' in sys.argv and VALID_ADR.findall(sys.argv[sys.argv.index('-a') + 1]):
