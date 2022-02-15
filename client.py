@@ -1,4 +1,4 @@
-import datetime
+import sys
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM
@@ -21,10 +21,18 @@ def presence_msg():
 
 
 def parcing_msg(input_date: dict):
-    if isinstance(input_date, dict):
-        if input_date[RESPONCE] and input_date[ALERT]:
-            return print(f'{input_date[RESPONCE]} : {input_date[ALERT]}')
-    return print()
+    try:
+        if isinstance(input_date, dict):
+            if input_date[RESPONCE] and input_date[ALERT] and input_date[TIME]:
+                if isinstance(input_date[TIME], float):
+                    timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
+                    return print(f'{timeserv} - {input_date[RESPONCE]} : {input_date[ALERT]}')
+                raise ValueError
+            raise KeyError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
+            return print('Неправильный ответ/JSON-объект')
 
 
 if VALID_ADR.findall(sys.argv[1]):
