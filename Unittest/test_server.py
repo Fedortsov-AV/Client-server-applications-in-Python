@@ -1,7 +1,7 @@
 import os
 import sys
-import unittest
 import time
+import unittest
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from server import parcing_msg
@@ -80,14 +80,6 @@ class TestServerpParcing_msg(unittest.TestCase):
     def test_date_none(self):
         """Проверка передачи пустого словаря в агрумент"""
         self.assertEqual(parcing_msg({}), ANS_400)
-
-    def test_type_ans_200(self):
-        """Проверка типа данных в return (ANS_200)"""
-        self.assertIsInstance(parcing_msg(self.testdict), dict)
-
-    def test_type_ans_400(self):
-        """Проверка типа данных в return (ANS_400)"""
-        self.assertIsInstance(parcing_msg(self.testlist), dict)
 
 
 if __name__ == '__main__':

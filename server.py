@@ -2,8 +2,7 @@ import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, AUTHUSER, \
-    PASSWORD
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, AUTHUSER
 
 
 def parcing_msg(input_date: dict):
@@ -18,7 +17,6 @@ def parcing_msg(input_date: dict):
         raise TypeError
     finally:
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
-            print(sys.exc_info()[0])
             return ANS_400
 
 
