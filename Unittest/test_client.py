@@ -5,7 +5,7 @@ import unittest
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from client import parcing_msg
-from common.variables import ANS_200, ANS_400, TIME, RESPONCE, ALERT
+from common.variables import ANS_200, TIME, RESPONCE, ALERT
 
 
 class TestClientParcing_msg(unittest.TestCase):

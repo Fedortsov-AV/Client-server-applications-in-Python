@@ -19,26 +19,38 @@ def parcing_msg(input_date: dict):
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
             return ANS_400
 
-
-def main():
-    if '-a' in sys.argv and VALID_ADR.findall(sys.argv[sys.argv.index('-a') + 1]):
-        ADDRES = VALID_ADR.findall(sys.argv[sys.argv.index('-a') + 1])[0]
+def parse_adress_in_argv(arg: list):
+    if '-a' in arg and VALID_ADR.findall(arg[sys.argv.index('-a') + 1]):
+        ADDRES = VALID_ADR.findall(arg[arg.index('-a') + 1])[0]
+        return ADDRES
     else:
         ADDRES = ''
         print(
             'Установлен ip-адрес \'%s\', в строке параметров отсутствует задание ip-адреса соответствующее шаблону' % (
                 ADDRES))
+        return ADDRES
 
-    if '-p' in sys.argv and VALID_PORT.findall(sys.argv[sys.argv.index('-p') + 1]):
-        PORT = int(VALID_PORT.findall(sys.argv[sys.argv.index('-p') + 1])[0])
+def parse_port_in_argv(arg: list):
+    if '-p' in arg and VALID_PORT.findall(arg[arg.index('-p') + 1]):
+        PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
         if PORT < 1024 or PORT > 65535:
             PORT = DEFAULT_PORT
             print('Установлен порт %d,  указанный в строке состояния порт не соответствует диапазону 1024 - 65535' % (
                 DEFAULT_PORT))
+            return PORT
+        else:
+            PORT = int(DEFAULT_PORT)
+            print(
+                'Установлен порт %d, в строке параметров отсутствует задание порта соответствующее шаблону' % DEFAULT_PORT)
+            return PORT
     else:
         PORT = int(DEFAULT_PORT)
-        print(
-            'Установлен порт %d, в строке параметров отсутствует задание порта соответствующее шаблону' % DEFAULT_PORT)
+        return PORT
+
+
+def main():
+    ADDRES = parse_adress_in_argv(sys.argv)
+    PORT = parse_port_in_argv(sys.argv)
 
     print('%s:%d' % (ADDRES, PORT))
     s = socket(AF_INET, SOCK_STREAM)
