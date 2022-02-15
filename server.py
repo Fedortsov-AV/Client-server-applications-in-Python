@@ -72,7 +72,7 @@ def main():
         print("Запрос на соединение от ", addr)
         try:
             data = get_message(client)
-            print('Сообщение: ', data, ', было отправлено клиентом: ', addr, 'type data=', type(data))
+            print('Сообщение: ', data, ', было отправлено клиентом: ', addr)
             msg = parcing_msg(data)
             send_message(msg, client)
             client.close()
