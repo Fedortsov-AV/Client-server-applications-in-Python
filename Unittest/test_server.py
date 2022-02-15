@@ -1,10 +1,11 @@
 import os
 import sys
 import unittest
+import time
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from server import parcing_msg
-from common.variables import ANS_200, ANS_400, ACTION, USER
+from common.variables import ANS_200, ANS_400, ACTION, USER, TIME, AUTHUSER, PASSWORD
 
 
 class TestServerpParcing_msg(unittest.TestCase):
@@ -13,7 +14,21 @@ class TestServerpParcing_msg(unittest.TestCase):
     '''
     testlist = [1, 2, 3]
     testtuple = (1, 2, 3)
-    testdict = {ACTION: 'presence', USER: 'guest'}
+    testdict = {
+        ACTION: 'presence',
+        TIME: time.time(),
+        USER: {
+            AUTHUSER: 'guest',
+            PASSWORD: ''
+        }
+    }
+    testerrordict = {
+        ACTION: 'prsence',
+        USER: {
+            AUTHUSER: 'guest',
+            PASSWORD: ''
+        }
+    }
 
     def setUp(self) -> None:
         pass
@@ -26,14 +41,14 @@ class TestServerpParcing_msg(unittest.TestCase):
         '''
         Проверка KeyError (Пропускается-тест должен вернуть fail)
         '''
-        self.assertRaises(KeyError, parcing_msg, {ACTION: 'presence'})
+        self.assertRaises(KeyError, parcing_msg, self.testerrordict)
 
     @unittest.skip
     def testValueError(self):
         '''
         Проверка ValueError (Пропускается-тест должен вернуть fail)
         '''
-        self.assertRaises(ValueError, parcing_msg, {ACTION: 'prsence', USER: 'guest'})
+        self.assertRaises(ValueError, parcing_msg, self.testerrordict)
 
     @unittest.skip
     def testTypeErrorr(self):

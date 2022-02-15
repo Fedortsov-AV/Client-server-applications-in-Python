@@ -8,15 +8,17 @@ from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_4
 
 def parcing_msg(input_date: dict):
     try:
+        print(input_date[USER])
         if isinstance(input_date, dict):
-            if input_date[ACTION] and input_date[USER] and input_date[TIME] and input_date[AUTHUSER] and input_date[PASSWORD]:
-                if input_date[ACTION] == 'presence' and input_date[AUTHUSER] == 'guest':
+            if input_date[ACTION] and input_date[USER][AUTHUSER] and input_date[TIME]:
+                if input_date[ACTION] == 'presence' and input_date[USER][AUTHUSER] == 'guest':
                     return ANS_200
                 raise ValueError
             raise KeyError
         raise TypeError
     finally:
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
+            print(sys.exc_info()[0])
             return ANS_400
 
 
