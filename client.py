@@ -4,8 +4,8 @@ import time
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import send_message, get_message
-from common.variables import PASSWORD, TIME, AUTHUSER, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, ACTION, \
-    USER, RESPONCE
+from common.variables import PASSWORD, TIME, AUTH_USER, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
+    ACTION, USER, RESPONSE
 
 
 def presence_msg():
@@ -13,20 +13,20 @@ def presence_msg():
         ACTION: 'presence',
         TIME: time.time(),
         USER: {
-            AUTHUSER: 'guest',
+            AUTH_USER: 'guest',
             PASSWORD: ''
         }
     }
     return msg
 
 
-def parcing_msg(input_date: dict):
+def parsing_msg(input_date: dict):
     try:
         if isinstance(input_date, dict):
-            if input_date[RESPONCE] and input_date[ALERT] and input_date[TIME]:
+            if input_date[RESPONSE] and input_date[ALERT] and input_date[TIME]:
                 if isinstance(input_date[TIME], float):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
-                    return f'{timeserv} - {input_date[RESPONCE]} : {input_date[ALERT]}'
+                    return f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}'
                 raise ValueError
             raise KeyError
         raise TypeError
@@ -35,47 +35,51 @@ def parcing_msg(input_date: dict):
             return 'Неправильный ответ/JSON-объект'
 
 
-def parce_addres_in_cmd(arg: list):
-    if VALID_ADR.findall(arg[1]):
-        if VALID_ADR.findall(arg[1])[0]:
-            ADDRES = VALID_ADR.findall(arg[1])[0]
-            return ADDRES
-        else:
-            ADDRES = DEFAULT_ADR
-            return ADDRES
-    else:
-        ADDRES = DEFAULT_ADR
-        print(
-            'Установлен ip-адрес \'%s\', в строке параметров отсутствует задание ip-адреса соответствующее шаблону' % (
-                DEFAULT_ADR))
-        return ADDRES
+def parse_addres_in_cmd(arg: list):
+    try:
+        if isinstance(arg, list):
+            if VALID_ADR.findall(arg[1]):
+                if VALID_ADR.findall(arg[1])[0]:
+                    addres = VALID_ADR.findall(arg[1])[0]
+                    return addres
+                raise ValueError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            addres = DEFAULT_ADR
+            return addres
 
 
-def parce_port_in_cmd(arg: list):
-    if VALID_PORT.findall(arg[2]):
-        if VALID_PORT.findall(arg[2])[0]:
-            PORT = int(VALID_PORT.findall(arg[2])[0])
-            return PORT
-
-    else:
-        PORT = int(DEFAULT_PORT)
-        print(
-            'Установлен ip-адрес \'%s\', в строке параметров отсутствует задание ip-адреса соответствующее шаблону' % (
-                DEFAULT_ADR))
-        return PORT
+def parse_port_in_cmd(arg: list):
+    try:
+        if isinstance(arg, list):
+            if VALID_PORT.findall(arg[2]):
+                if VALID_PORT.findall(arg[2])[0]:
+                    port = int(VALID_PORT.findall(arg[2])[0])
+                    if 1024 < port < 65535:
+                        return port
+                    raise ValueError
+                raise IndexError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            port = int(DEFAULT_PORT)
+            return port
 
 
 def main():
-    ADDRES = parce_addres_in_cmd(sys.argv)
-    PORT = parce_port_in_cmd(sys.argv)
+    addres = parse_addres_in_cmd(sys.argv)
+    port = parse_port_in_cmd(sys.argv)
 
-    # print('%s:%d' % (ADDRES, PORT))
-    SRVSOCK = socket(AF_INET, SOCK_STREAM)
-    SRVSOCK.connect((ADDRES, PORT))
-    PRESENCE_MSG = presence_msg()
-    send_message(PRESENCE_MSG, SRVSOCK)
-    data = get_message(SRVSOCK)
-    print(parcing_msg(data))
+    # print('%s:%d' % (addres, port))
+    srvsock = socket(AF_INET, SOCK_STREAM)
+    srvsock.connect((addres, port))
+    presence_message = presence_msg()
+    send_message(presence_message, srvsock)
+    data = get_message(srvsock)
+    print(parsing_msg(data))
 
 
 if __name__ == '__main__':
