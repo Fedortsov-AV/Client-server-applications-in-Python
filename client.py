@@ -38,6 +38,7 @@ else:
 SRVSOCK = socket(AF_INET, SOCK_STREAM)
 SRVSOCK.connect((ADDRES, PORT))
 PRESENCE_MSG = presence_msg()
+PRESENCE_MSG = {ACTION: 'presence'}
 send_message(PRESENCE_MSG, SRVSOCK)
 data = get_message(SRVSOCK)
 parcing_msg(data)

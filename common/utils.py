@@ -5,6 +5,7 @@ from common.variables import MAX_LEN_MSG, ENCODE
 
 
 def send_message(msg: dict, sock: socket.socket):
+
     if isinstance(msg, dict) and isinstance(sock, socket.socket):
         json_msg = json.dumps(msg).encode(ENCODE)
         sock.send(json_msg)
