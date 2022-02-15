@@ -11,21 +11,21 @@ ENCODE = 'utf-8'
 
 ACTION = 'ACTION'
 USER = 'USER'
-RESPONCE = 'RESPONCE'
+RESPONSE = 'RESPONSE'
 ALERT = 'ALERT'
 TIME = 'TIME'
-AUTHUSER = 'AUTHUSER'
+AUTH_USER = 'AUTHUSER'
 PASSWORD = 'PASSWORD'
 
 
 ANS_200 = {
-    RESPONCE: 200,
+    RESPONSE: 200,
     ALERT: 'ОК',
     TIME: time.time()
 }
 
 ANS_400 = {
-    RESPONCE: 400,
+    RESPONSE: 400,
     ALERT: 'Неправильный запрос/JSON-объект',
     TIME: time.time()
 }

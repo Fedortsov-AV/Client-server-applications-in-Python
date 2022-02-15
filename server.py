@@ -2,14 +2,14 @@ import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, AUTHUSER
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, AUTH_USER
 
 
-def parcing_msg(input_date: dict):
+def parsing_msg(input_date: dict):
     try:
         if isinstance(input_date, dict):
-            if input_date[ACTION] and input_date[USER][AUTHUSER] and input_date[TIME]:
-                if input_date[ACTION] == 'presence' and input_date[USER][AUTHUSER] == 'guest':
+            if input_date[ACTION] and input_date[USER][AUTH_USER] and input_date[TIME]:
+                if input_date[ACTION] == 'presence' and input_date[USER][AUTH_USER] == 'guest':
                     return ANS_200
                 raise ValueError
             raise KeyError
@@ -19,7 +19,7 @@ def parcing_msg(input_date: dict):
             return ANS_400
 
 
-def parse_adress_in_argv(arg: list):
+def parse_addres_in_argv(arg: list):
     try:
         if isinstance(arg, list):
             if '-a' in arg:
@@ -44,10 +44,10 @@ def parse_port_in_argv(arg: list):
                 if VALID_PORT.findall(arg[sys.argv.index('-p') + 1]):
                     if VALID_PORT.findall(arg[arg.index('-p') + 1])[0]:
                         PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
-                        if PORT < 1024 or PORT > 65535:
+                        if PORT > 1024 or PORT < 65535:
                             PORT = int(DEFAULT_PORT)
                             return PORT
-                        raise TypeError
+                        raise ValueError
                     raise ValueError
                 raise IndexError
             raise IndexError
@@ -59,7 +59,7 @@ def parse_port_in_argv(arg: list):
 
 
 def main():
-    ADDRES = parse_adress_in_argv(sys.argv)
+    ADDRES = parse_addres_in_argv(sys.argv)
     PORT = parse_port_in_argv(sys.argv)
 
     print('%s:%d' % (ADDRES, PORT))
@@ -73,7 +73,7 @@ def main():
         try:
             data = get_message(client)
             print('Сообщение: ', data, ', было отправлено клиентом: ', addr)
-            msg = parcing_msg(data)
+            msg = parsing_msg(data)
             send_message(msg, client)
             client.close()
         except ConnectionResetError:
