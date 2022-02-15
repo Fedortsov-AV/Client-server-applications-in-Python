@@ -1,4 +1,6 @@
+import datetime
 import re
+import time
 
 DEFAULT_PORT = 7777
 DEFAULT_ADR = '127.0.0.1'
@@ -11,12 +13,19 @@ ACTION = 'ACTION'
 USER = 'USER'
 RESPONCE = 'RESPONCE'
 ALERT = 'ALERT'
+TIME = 'TIME'
+AUTHUSER = 'USER'
+PASSWORD = 'PASSWORD'
+
 
 ANS_200 = {
     RESPONCE: 200,
-    ALERT: 'ОК'
+    ALERT: 'ОК',
+    TIME: time.time()
 }
+
 ANS_400 = {
     RESPONCE: 400,
-    ALERT: 'Неправильный запрос/JSON-объект'
+    ALERT: 'Неправильный запрос/JSON-объект',
+    TIME: time.time()
 }

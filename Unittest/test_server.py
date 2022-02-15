@@ -7,7 +7,7 @@ from server import parcing_msg
 from common.variables import ANS_200, ANS_400, ACTION, USER
 
 
-class TestServer(unittest.TestCase):
+class TestServerpParcing_msg(unittest.TestCase):
     '''
         Тестирование функций сервера
     '''
@@ -55,15 +55,15 @@ class TestServer(unittest.TestCase):
         self.assertEqual(parcing_msg({ACTION: 'prsence'}), ANS_400)
 
     def test_no_key_action(self):
-        """Проверка отсутствия ключа 'USER'"""
+        """Проверка отсутствия ключа 'ACTION'"""
         self.assertEqual(parcing_msg({USER: 'guest'}), ANS_400)
 
     def test_data_no_dict(self):
-        """Проверка отсутствия ключа 'USER'"""
+        """Проверка неверного типа данных аргумента функции"""
         self.assertEqual(parcing_msg(self.testlist), ANS_400)
 
     def test_date_none(self):
-        """Проверка передачи пустого словаря"""
+        """Проверка передачи пустого словаря в агрумент"""
         self.assertEqual(parcing_msg({}), ANS_400)
 
     def test_type_ans_200(self):
