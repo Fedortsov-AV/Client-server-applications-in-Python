@@ -73,13 +73,14 @@ def main():
     addres = parse_addres_in_cmd(sys.argv)
     port = parse_port_in_cmd(sys.argv)
 
-    # print('%s:%d' % (addres, port))
+    print('%s:%d' % (addres, port))
     clientsock = socket(AF_INET, SOCK_STREAM)
     clientsock.connect((addres, port))
     presence_message = presence_msg()
     send_message(presence_message, clientsock)
     data = get_message(clientsock)
     print(parsing_msg(data))
+
 
 
 if __name__ == '__main__':
