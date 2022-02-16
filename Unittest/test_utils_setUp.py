@@ -8,6 +8,7 @@ from common.variables import ANS_200, DEFAULT_PORT, DEFAULT_ADR, ACTION, TIME, U
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from common.utils import send_message, get_message
 
+
 class TestUtilFunctionForSetUp(unittest.TestCase):
     """Тест функций отправки и получения сообщений с помощью метода SetUp"""
 

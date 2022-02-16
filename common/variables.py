@@ -1,4 +1,3 @@
-import datetime
 import re
 import time
 
@@ -16,7 +15,6 @@ ALERT = 'ALERT'
 TIME = 'TIME'
 ACCOUNT_NAME = 'AUTHUSER'
 PASSWORD = 'PASSWORD'
-
 
 ANS_200 = {
     RESPONSE: 200,
