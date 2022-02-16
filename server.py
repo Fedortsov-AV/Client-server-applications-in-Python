@@ -2,14 +2,14 @@ import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, AUTH_USER
+from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME
 
 
 def parsing_msg(input_date: dict):
     try:
         if isinstance(input_date, dict):
-            if input_date[ACTION] and input_date[USER][AUTH_USER] and input_date[TIME]:
-                if input_date[ACTION] == 'presence' and input_date[USER][AUTH_USER] == 'guest':
+            if input_date[ACTION] and input_date[USER][ACCOUNT_NAME] and input_date[TIME]:
+                if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] == 'guest':
                     return ANS_200
                 raise ValueError
             raise KeyError

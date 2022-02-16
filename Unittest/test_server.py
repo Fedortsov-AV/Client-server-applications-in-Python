@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from server import parsing_msg, parse_addres_in_argv, parse_port_in_argv
-from common.variables import ANS_200, ANS_400, ACTION, USER, TIME, AUTH_USER, PASSWORD, VALID_ADR, VALID_PORT
+from common.variables import ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, PASSWORD, VALID_ADR, VALID_PORT
 
 
 class TestServerParsingMsg(unittest.TestCase):
@@ -17,14 +17,14 @@ class TestServerParsingMsg(unittest.TestCase):
         ACTION: 'presence',
         TIME: time.time(),
         USER: {
-            AUTH_USER: 'guest',
+            ACCOUNT_NAME: 'guest',
             PASSWORD: ''
         }
     }
     test_error_dict = {
         ACTION: 'prsence',
         USER: {
-            AUTH_USER: 'guest',
+            ACCOUNT_NAME: 'guest',
             PASSWORD: ''
         }
     }
