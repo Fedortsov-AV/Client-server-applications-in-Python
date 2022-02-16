@@ -8,6 +8,7 @@ from common.variables import ANS_200, DEFAULT_PORT, DEFAULT_ADR, ACTION, TIME, U
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from common.utils import send_message, get_message
 
+
 class TestUtilFunctionForSetUpClass(unittest.TestCase):
     """Тест функций отправки и получения сообщений с помощью метода SetUp"""
     test_dict_send = {
@@ -24,7 +25,6 @@ class TestUtilFunctionForSetUpClass(unittest.TestCase):
     servsocket.listen(1)
     clientsocket.connect((DEFAULT_ADR, DEFAULT_PORT))
     send_message(test_dict_send, clientsocket)
-
 
     @classmethod
     def setUpClass(cls) -> None:

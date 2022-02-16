@@ -73,7 +73,7 @@ def main():
     addres = parse_addres_in_cmd(sys.argv)
     port = parse_port_in_cmd(sys.argv)
 
-    # print('%s:%d' % (addres, port))
+    print('%s:%d' % (addres, port))
     clientsock = socket(AF_INET, SOCK_STREAM)
     clientsock.connect((addres, port))
     presence_message = presence_msg()
