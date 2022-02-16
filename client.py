@@ -4,7 +4,7 @@ import time
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import send_message, get_message
-from common.variables import PASSWORD, TIME, AUTH_USER, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
+from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE
 
 
@@ -13,7 +13,7 @@ def presence_msg():
         ACTION: 'presence',
         TIME: time.time(),
         USER: {
-            AUTH_USER: 'guest',
+            ACCOUNT_NAME: 'guest',
             PASSWORD: ''
         }
     }
@@ -74,11 +74,11 @@ def main():
     port = parse_port_in_cmd(sys.argv)
 
     # print('%s:%d' % (addres, port))
-    srvsock = socket(AF_INET, SOCK_STREAM)
-    srvsock.connect((addres, port))
+    clientsock = socket(AF_INET, SOCK_STREAM)
+    clientsock.connect((addres, port))
     presence_message = presence_msg()
-    send_message(presence_message, srvsock)
-    data = get_message(srvsock)
+    send_message(presence_message, clientsock)
+    data = get_message(clientsock)
     print(parsing_msg(data))
 
 
