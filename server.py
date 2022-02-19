@@ -7,6 +7,7 @@ from log.server_log_config import server_log as srv_log
 
 
 def parsing_msg(input_date: dict):
+    srv_log.debug(f'Получен аргумент: {input_date}')
     try:
         if isinstance(input_date, dict):
             if input_date[ACTION] and input_date[USER][ACCOUNT_NAME] and input_date[TIME]:
