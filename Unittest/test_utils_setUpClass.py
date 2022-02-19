@@ -1,11 +1,10 @@
 import os
 import sys
 import unittest
-from socket import socket, AF_INET, SOCK_STREAM
-
-from common.variables import ANS_200, DEFAULT_PORT, DEFAULT_ADR, ACTION, TIME, USER, ACCOUNT_NAME, PASSWORD, ANS_400
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
+from common.variables import ANS_200, DEFAULT_PORT, DEFAULT_ADR, ACTION, TIME, USER, ACCOUNT_NAME, PASSWORD, ANS_400
 from common.utils import send_message, get_message
 
 
@@ -21,6 +20,7 @@ class TestUtilFunctionForSetUpClass(unittest.TestCase):
     }
     servsocket = socket(AF_INET, SOCK_STREAM)
     servsocket.bind(('', DEFAULT_PORT))
+    servsocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     clientsocket = socket(AF_INET, SOCK_STREAM)
     servsocket.listen(1)
     clientsocket.connect((DEFAULT_ADR, DEFAULT_PORT))
