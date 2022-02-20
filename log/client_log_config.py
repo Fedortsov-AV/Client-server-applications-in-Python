@@ -11,7 +11,7 @@ client_log = logging.getLogger('client')
 fmt = logging.Formatter("%(asctime)s %(levelname)s %(module)s - %(message)s", "%d.%m.%Y %H:%M:%S")
 client_log.setLevel(logging.DEBUG)
 
-rotation = hand.TimedRotatingFileHandler(file, when="D", interval=1, encoding='UTF-8', delay=True)
+rotation = logging.FileHandler(file, encoding='UTF-8')
 rotation.setLevel(logging.DEBUG)
 stream = logging.StreamHandler(sys.stdout)
 stream.setLevel(logging.DEBUG)
