@@ -1,10 +1,13 @@
 import json
+import os
 import socket
 import sys
 
 from common.variables import MAX_LEN_MSG, ENCODE
+sys.path.append(os.path.join(os.getcwd(), '..'))
+from decorator import logs
 
-
+@logs
 def send_message(msg: dict, sock: socket.socket):
     try:
         if isinstance(msg, dict) and isinstance(sock, socket.socket):
@@ -19,7 +22,7 @@ def send_message(msg: dict, sock: socket.socket):
             print('send: ', sys.exc_info()[0])
             return 'Ошибка отправки'
 
-
+@logs
 def get_message(sock: socket.socket):
     try:
         if isinstance(sock, socket.socket):

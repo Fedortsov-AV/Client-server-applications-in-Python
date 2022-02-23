@@ -1,13 +1,18 @@
+import logging
 import sys
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME
-from log.server_log_config import server_log as srv_log
+from decorator import logs
+import log.server_log_config
+
+srv_log = logging.getLogger('server')
 
 
+@logs
 def parsing_msg(input_date: dict):
-    srv_log.debug(f'Получен аргумент: {input_date}')
+    # srv_log.debug(f'Получен аргумент: {input_date}')
     try:
         if isinstance(input_date, dict):
             if input_date[ACTION] and input_date[USER][ACCOUNT_NAME] and input_date[TIME]:
@@ -23,8 +28,9 @@ def parsing_msg(input_date: dict):
             return ANS_400
 
 
+@logs
 def parse_addres_in_argv(arg: list):
-    srv_log.debug(f'Получен аргумент: {arg}')
+    # srv_log.debug(f'Получен аргумент: {arg}')
     try:
         if isinstance(arg, list):
             if '-a' in arg:
@@ -44,8 +50,9 @@ def parse_addres_in_argv(arg: list):
             return ADDRES
 
 
+@logs
 def parse_port_in_argv(arg: list):
-    srv_log.debug(f'Получен аргумент: {arg}')
+    # srv_log.debug(f'Получен аргумент: {arg}')
     try:
         if isinstance(arg, list):
             if '-p' in arg:

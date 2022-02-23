@@ -1,5 +1,4 @@
 import logging
-import logging.handlers as hand
 import os
 import sys
 
@@ -19,15 +18,13 @@ stream.setLevel(logging.DEBUG)
 rotation.setFormatter(fmt)
 stream.setFormatter(fmt)
 
-
 client_log.addHandler(rotation)
 client_log.addHandler(stream)
 
-
 if __name__ == '__main__':
     client_log.debug('This is a debug message')
-    client_log.info('This is an info message')
-    client_log.warning('This is a warning message')
-    client_log.error('This is an error message')
-    client_log.critical('This is a critical message')
-    client_log.info('Тестовый запуск логирования')
+    # client_log.info('This is an info message')
+    # client_log.warning('This is a warning message')
+    # client_log.error('This is an error message')
+    # client_log.critical('This is a critical message')
+    # client_log.info('Тестовый запуск логирования')
