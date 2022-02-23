@@ -1,12 +1,10 @@
 import logging
-import os
 import sys
 import log.server_log_config
 import log.client_log_config
 
 from functools import wraps
 
-print(sys.argv[0].find('server.py'))
 if sys.argv[0].find('client.py') == -1:
     logger = logging.getLogger('server')
 else:
@@ -17,7 +15,6 @@ def logs(func):
 
     @wraps(func)
     def wrap(*args, **kwargs):
-        print(logger)
         res = func(*args, **kwargs)
         fmt = logging.Formatter("%(asctime)s - %(message)s", "%d.%m.%Y %H:%M:%S")
         logger.handlers[0].setFormatter(fmt)

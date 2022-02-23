@@ -1,5 +1,4 @@
 import logging
-import logging.handlers as hand
 import os
 import sys
 
@@ -19,10 +18,8 @@ stream.setLevel(logging.DEBUG)
 rotation.setFormatter(fmt)
 stream.setFormatter(fmt)
 
-
 client_log.addHandler(rotation)
 client_log.addHandler(stream)
-
 
 if __name__ == '__main__':
     client_log.debug('This is a debug message')

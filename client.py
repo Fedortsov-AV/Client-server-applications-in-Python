@@ -2,13 +2,14 @@ import logging
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM
-from decorator import logs
 import log.client_log_config
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE
+from decorator import logs
 
 logger = logging.getLogger('client')
+
 
 @logs
 def presence_msg():
@@ -22,6 +23,7 @@ def presence_msg():
     }
     logger.debug(f'сформировано сообщение {msg}')
     return msg
+
 
 @logs
 def parsing_msg(input_date: dict):
@@ -39,6 +41,7 @@ def parsing_msg(input_date: dict):
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
             logger.critical(f'Произошла ошибка {sys.exc_info()[0]}')
             return 'Неправильный ответ/JSON-объект'
+
 
 @logs
 def parse_addres_in_cmd(arg: list):
@@ -58,6 +61,7 @@ def parse_addres_in_cmd(arg: list):
             addres = DEFAULT_ADR
             logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен ip-адрес {addres}')
             return addres
+
 
 @logs
 def parse_port_in_cmd(arg: list):
