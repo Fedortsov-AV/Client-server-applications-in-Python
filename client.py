@@ -114,6 +114,23 @@ def parse_mode_in_cmd(arg: list):
             logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен порт {port}')
             return port
 
+def get_server_msg(clientsock: socket):
+    logger.debug('Жду данные от сервера')
+    while True:
+        data = get_message(clientsock)
+        logger.info('Разбираю ответ сервера')
+        print(parsing_msg(data))
+
+def send_msg(clientsock):
+    name = input('Введите свое имя: ')
+    while True:
+        logger.info('Формирую сообщение пользователя')
+        str = input('Введите сообщение для отправки (для выхода введите \'exit\'): ')
+        message = generation_msg(str, name)
+        logger.info('Отправляю сообщение на сервер')
+        send_message(message, clientsock)
+
+
 def main():
     addres = parse_addres_in_cmd(sys.argv)
     port = parse_port_in_cmd(sys.argv)
@@ -131,20 +148,11 @@ def main():
 
 
         if mod == 'get':
-            logger.debug('Жду данные от сервера')
-            while True:
-                data = get_message(clientsock)
-                logger.info('Разбираю ответ сервера')
-                print(parsing_msg(data))
+            get_server_msg(clientsock)
+
 
         if mod == 'send':
-            name = input('Введите свое имя: ')
-            while True:
-                logger.info('Формирую сообщение пользователя')
-                str = input('Введите сообщение для отправки (для выхода введите \'exit\'): ')
-                message = generation_msg(str, name)
-                logger.info('Отправляю сообщение на сервер')
-                send_message(message, clientsock)
+            send_msg(clientsock)
 
 
 
