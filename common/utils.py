@@ -4,8 +4,10 @@ import socket
 import sys
 
 from common.variables import MAX_LEN_MSG, ENCODE
+
 sys.path.append(os.path.join(os.getcwd(), '..'))
 from decorator import logs
+
 
 @logs
 def send_message(msg: dict, sock: socket.socket):
@@ -22,6 +24,7 @@ def send_message(msg: dict, sock: socket.socket):
             print('send: ', sys.exc_info()[0])
             return 'Ошибка отправки'
 
+
 @logs
 def get_message(sock: socket.socket):
     try:
@@ -35,6 +38,6 @@ def get_message(sock: socket.socket):
             return print('Получена неверная структура JSON')
         return print('Неверный тип данных передан в аргументы функции get_message(sock: socket.socket)')
     finally:
-        if sys.exc_info()[0] in (TypeError, ValueError, OSError):
+        if sys.exc_info()[0] in (TypeError, ValueError, OSError, ConnectionResetError):
             print('get: ', sys.exc_info()[0])
             return 'Ошибка получения'

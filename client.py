@@ -151,6 +151,7 @@ def main():
             get_server_msg(clientsock)
 
 
+
         if mod == 'send':
             send_msg(clientsock)
 

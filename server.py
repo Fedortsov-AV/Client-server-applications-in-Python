@@ -1,6 +1,6 @@
 import logging
-from select import select
 import sys
+from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
@@ -8,6 +8,7 @@ from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_4
     MESSAGE_TEXT, FROM, RESPONSE
 from decorator import logs
 import log.server_log_config
+
 
 srv_log = logging.getLogger('server')
 
