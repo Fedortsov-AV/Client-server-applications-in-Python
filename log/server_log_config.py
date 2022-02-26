@@ -10,7 +10,7 @@ fmt = logging.Formatter("%(asctime)s %(levelname)s %(module)s - %(message)s", "%
 rotation = hand.TimedRotatingFileHandler(file, when="D", interval=1, encoding='UTF-8', delay=True)
 rotation.setLevel(logging.DEBUG)
 stream = logging.StreamHandler(sys.stdout)
-stream.setLevel(logging.DEBUG)
+stream.setLevel(logging.INFO)
 
 rotation.setFormatter(fmt)
 stream.setFormatter(fmt)

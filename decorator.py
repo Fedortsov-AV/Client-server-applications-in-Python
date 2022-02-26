@@ -19,7 +19,7 @@ def logs(func):
         fmt = logging.Formatter("%(asctime)s - %(message)s", "%d.%m.%Y %H:%M:%S")
         logger.handlers[0].setFormatter(fmt)
         logger.handlers[1].setFormatter(fmt)
-        logger.info(f'Функция {func.__name__} вызвана функцией {sys._getframe().f_back.f_code.co_name}, '
+        logger.debug(f'Функция {func.__name__} вызвана функцией {sys._getframe().f_back.f_code.co_name}, '
                     f'из файла {sys._getframe().f_back.f_code.co_filename.split("/")[-1]} '
                     f'с параметрами *args = {args}, **kwargs {kwargs}')
 

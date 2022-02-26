@@ -40,7 +40,6 @@ def generation_msg(message: str, name: str) -> dict:
 
 @logs
 def parsing_msg(input_date: dict):
-    print('parsing', input_date)
     # logger.debug(f'Получен аргумент {input_date}')
     try:
         if isinstance(input_date, dict):
@@ -134,9 +133,7 @@ def main():
         if mod == 'get':
             logger.debug('Жду данные от сервера')
             while True:
-                print("+" * 50)
                 data = get_message(clientsock)
-                print(data)
                 logger.info('Разбираю ответ сервера')
                 print(parsing_msg(data))
 

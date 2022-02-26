@@ -13,7 +13,7 @@ client_log.setLevel(logging.DEBUG)
 rotation = logging.FileHandler(file, encoding='UTF-8')
 rotation.setLevel(logging.DEBUG)
 stream = logging.StreamHandler(sys.stdout)
-stream.setLevel(logging.DEBUG)
+stream.setLevel(logging.INFO)
 
 rotation.setFormatter(fmt)
 stream.setFormatter(fmt)
