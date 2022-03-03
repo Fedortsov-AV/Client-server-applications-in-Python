@@ -2,22 +2,25 @@ import logging
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from threading import Thread
+
 import log.client_log_config
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM
 from decorator import logs
 
+
 logger = logging.getLogger('client')
 
 
 @logs
-def presence_msg():
+def presence_msg() -> dict:
     msg = {
         ACTION: 'presence',
         TIME: time.time(),
         USER: {
-            ACCOUNT_NAME: 'guest',
+            ACCOUNT_NAME: user_name,
             PASSWORD: ''
         }
     }
@@ -32,8 +35,9 @@ def generation_msg(message: str, name: str) -> dict:
     msg = {
         ACTION: 'MESSAGE',
         TIME: time.time(),
-        ACCOUNT_NAME: name,
-        MESSAGE_TEXT: message
+        ACCOUNT_NAME: user_name,
+        MESSAGE_TEXT: message,
+        FROM: name
     }
     logger.debug(f'сформировано сообщение {msg}')
     return msg
@@ -48,8 +52,8 @@ def parsing_msg(input_date: dict):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                     return f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}'
                 raise ValueError
-            elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT]:
-                return f"{input_date[FROM]} написал: {input_date[MESSAGE_TEXT]}"
+            elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[ACCOUNT_NAME]:
+                return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
         raise TypeError
     finally:
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
@@ -118,16 +122,16 @@ def get_server_msg(clientsock: socket):
     logger.debug('Жду данные от сервера')
     while True:
         data = get_message(clientsock)
-        logger.info('Разбираю ответ сервера')
+        logger.debug('Разбираю ответ сервера')
         print(parsing_msg(data))
 
 def send_msg(clientsock):
-    name = input('Введите свое имя: ')
     while True:
-        logger.info('Формирую сообщение пользователя')
-        str = input('Введите сообщение для отправки (для выхода введите \'exit\'): ')
+        name = input('Кому отправить сообщение?\n ')
+        logger.debug('Формирую сообщение пользователя')
+        str = input('Введите сообщение для отправки (для выхода введите \'exit\'): \n')
         message = generation_msg(str, name)
-        logger.info('Отправляю сообщение на сервер')
+        logger.debug('Отправляю сообщение на сервер')
         send_message(message, clientsock)
 
 
@@ -139,23 +143,20 @@ def main():
     with socket(AF_INET, SOCK_STREAM) as clientsock:
         clientsock.connect((addres, port))
         clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        # presence_message = presence_msg()
-        # logger.info('Отправляю presence-сообщение на сервер')
-        # send_message(presence_message, clientsock)
-        # logger.info('Получаю ответ сервера')
-        # data = get_message(clientsock)
-        # print(parsing_msg(data))
+        pres = presence_msg()
+        send_message(pres, clientsock)
+        get_message(clientsock)
 
+        get = Thread(target=get_server_msg, args=(clientsock,), daemon=True)
+        send = Thread(target=send_msg, args=(clientsock,), daemon=True)
 
-        if mod == 'get':
-            get_server_msg(clientsock)
-
-
-
-        if mod == 'send':
-            send_msg(clientsock)
+        get.start()
+        send.start()
+        get.join()
+        send.join()
 
 
 
 if __name__ == '__main__':
+    user_name = input('Введите ваше имя: ')
     main()

@@ -18,12 +18,12 @@ def parsing_msg(input_date: dict, sock: socket, message_list: list):
     # srv_log.debug(f'Получен аргумент: {input_date}')
     try:
         if isinstance(input_date, dict):
-            if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] == 'guest' and input_date[TIME]:
-
+            if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
+                clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                 srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                 return send_message(ANS_200, sock)
-            elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT]:
-                message_list.append([input_date[ACCOUNT_NAME], input_date[MESSAGE_TEXT]])
+            elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] and input_date[FROM] != '':
+                message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
                 return message_list
             raise KeyError
         raise TypeError
@@ -108,6 +108,8 @@ def main():
         s.settimeout(0.5)
         s.bind((ADDRES, PORT))
         s.listen(5)
+
+
         clients = []
         message_list = []
         while True:
@@ -138,27 +140,31 @@ def main():
                         msg = parsing_msg(data, s_client, message_list)
                     except Exception as e:
                         clients.remove(s_client)
+                        for k, v in clients_dict.items():
+                            if v == s_client:
+                                del clients_dict[k]
                         srv_log.debug(sys.exc_info()[0])
                         srv_log.debug(f"Удалил клинета - {s_client}")
 
             if write:
-                srv_log.debug(f'Отправляю клиентам')
+                srv_log.debug(f'Отправляю клиенту')
                 try:
                     for message in message_list:
                         send_dict = {
                                 RESPONSE: 'message',
-                                FROM: message[0],
-                                MESSAGE_TEXT: message[1],
+                                ACCOUNT_NAME: message[0],
+                                FROM: message[1],
+                                MESSAGE_TEXT: message[2],
                             }
                         srv_log.debug(f'Формирую {send_dict}')
-                        for s_client in write:
-                            srv_log.debug(f'Отправляю {send_dict}')
-                            send_message(send_dict, s_client)
+                        send_message(send_dict, clients_dict[message[1]])
+                        srv_log.debug(f'Отправляю {send_dict}')
                         message_list.remove(message)
                 except Exception as e:
                     srv_log.debug(sys.exc_info()[0])
                     # raise
                     clients.remove(s_client)
+                    del clients_dict[message[0]]
                     srv_log.debug(f"Удалил клинета - {s_client}")
 
 
@@ -174,4 +180,5 @@ def main():
 
 
 if __name__ == '__main__':
+    clients_dict = {}
     main()
