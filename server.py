@@ -1,11 +1,12 @@
 import logging
 import sys
+import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
-    MESSAGE_TEXT, FROM, RESPONSE
+    MESSAGE_TEXT, FROM, RESPONSE, ALERT
 from decorator import logs
 import log.server_log_config
 
@@ -14,7 +15,7 @@ srv_log = logging.getLogger('server')
 
 
 @logs
-def parsing_msg(input_date: dict, sock: socket, message_list: list):
+def parsing_msg(input_date: dict, sock: socket, message_list: list, clients: list):
     # srv_log.debug(f'Получен аргумент: {input_date}')
     try:
         if isinstance(input_date, dict):
@@ -25,6 +26,16 @@ def parsing_msg(input_date: dict, sock: socket, message_list: list):
             elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] and input_date[FROM] != '':
                 message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
                 return message_list
+            elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
+                clients_dict.remove(input_date[ACCOUNT_NAME])
+                srv_log.debug(f"Удалил клинета - {input_date[ACCOUNT_NAME]}")
+                return
+            elif input_date[ACTION] == ALERT and input_date[RESPONSE] in (104, 105):
+                timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
+                srv_log.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
+                clients.remove(sock)
+                return
+
             raise KeyError
         raise TypeError
     finally:
@@ -137,31 +148,31 @@ def main():
                     try:
                         data = get_message(s_client)
                         srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
-                        msg = parsing_msg(data, s_client, message_list)
+                        msg = parsing_msg(data, s_client, message_list, clients)
                     except Exception as e:
                         clients.remove(s_client)
-                        for k, v in clients_dict.items():
-                            if v == s_client:
-                                del clients_dict[k]
                         srv_log.debug(sys.exc_info()[0])
                         srv_log.debug(f"Удалил клинета - {s_client}")
 
             if write:
                 srv_log.debug(f'Отправляю клиенту')
                 try:
+
                     for message in message_list:
-                        send_dict = {
-                                RESPONSE: 'message',
-                                ACCOUNT_NAME: message[0],
-                                FROM: message[1],
-                                MESSAGE_TEXT: message[2],
-                            }
-                        srv_log.debug(f'Формирую {send_dict}')
-                        send_message(send_dict, clients_dict[message[1]])
-                        srv_log.debug(f'Отправляю {send_dict}')
+                        if message[1] in clients_dict:
+                            send_dict = {
+                                    RESPONSE: 'message',
+                                    ACCOUNT_NAME: message[0],
+                                    FROM: message[1],
+                                    MESSAGE_TEXT: message[2],
+                                }
+                            srv_log.debug(f'Формирую {send_dict}')
+                            send_message(send_dict, clients_dict[message[1]])
+                            srv_log.debug(f'Отправляю {send_dict}')
+                            message_list.remove(message)
                         message_list.remove(message)
                 except Exception as e:
-                    srv_log.debug(sys.exc_info()[0])
+                    srv_log.info(sys.exc_info()[0])
                     # raise
                     clients.remove(s_client)
                     del clients_dict[message[0]]
@@ -180,5 +191,5 @@ def main():
 
 
 if __name__ == '__main__':
-    clients_dict = {}
+    clients_dict = dict()
     main()

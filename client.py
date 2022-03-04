@@ -1,5 +1,6 @@
 import logging
 import sys
+import threading
 import time
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
@@ -29,16 +30,22 @@ def presence_msg() -> dict:
 
 @logs
 def generation_msg(message: str, name: str) -> dict:
+    msg = {}
     if message == 'exit':
+        msg = {
+            ACTION: 'EXIT',
+            TIME: time.time(),
+            ACCOUNT_NAME: user_name,
+        }
         logger.info('Закрываю скрипт')
-        sys.exit(0)
-    msg = {
-        ACTION: 'MESSAGE',
-        TIME: time.time(),
-        ACCOUNT_NAME: user_name,
-        MESSAGE_TEXT: message,
-        FROM: name
-    }
+    else:
+        msg = {
+            ACTION: 'MESSAGE',
+            TIME: time.time(),
+            ACCOUNT_NAME: user_name,
+            MESSAGE_TEXT: message,
+            FROM: name,
+        }
     logger.debug(f'сформировано сообщение {msg}')
     return msg
 
@@ -47,10 +54,12 @@ def parsing_msg(input_date: dict):
     # logger.debug(f'Получен аргумент {input_date}')
     try:
         if isinstance(input_date, dict):
-            if input_date[RESPONSE] == 200 or input_date[RESPONSE] == 400 and input_date[ALERT] and input_date[TIME]:
+            if input_date[RESPONSE] in (200, 400, 104, 105) and input_date[ALERT] and input_date[TIME]:
                 if isinstance(input_date[TIME], float):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
-                    return f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}'
+                    logger.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
+                    logger.info(f'Закрываю клиент')
+                    sys.exit(1)
                 raise ValueError
             elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[ACCOUNT_NAME]:
                 return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
@@ -117,6 +126,10 @@ def send_msg(clientsock):
         message = generation_msg(str, name)
         logger.debug('Отправляю сообщение на сервер')
         send_message(message, clientsock)
+        if message[ACTION] == 'EXIT':
+            time.sleep(0.7)
+            break
+
 
 
 def main():
@@ -130,18 +143,18 @@ def main():
         pres = presence_msg()
         send_message(pres, clientsock)
         get_message(clientsock)
-        get = Thread(target=get_server_msg, args=(clientsock,), daemon=True)
-        send = Thread(target=send_msg, args=(clientsock,), daemon=True)
+
+        get = Thread(target=get_server_msg, args=(clientsock,), daemon=True, name='get')
+        send = Thread(target=send_msg, args=(clientsock,), daemon=True, name='send')
         get.start()
         send.start()
-        get.join()
-        send.join()
 
-    while True:
-        time.sleep(1)
-        if get.is_alive() and send.is_alive():
-            continue
-        break
+        while True:
+            time.sleep(1)
+            if get.is_alive() and send.is_alive():
+
+                continue
+            break
 
 
 
