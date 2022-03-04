@@ -102,22 +102,6 @@ def parse_port_in_cmd(arg: list):
             logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен порт {port}')
             return port
 
-@logs
-def parse_mode_in_cmd(arg: list):
-    logger.debug(f'Получен аргумент {arg}')
-    try:
-        if isinstance(arg, list):
-            if arg[3]:
-                mod = arg[3]
-                return mod
-            raise IndexError
-        raise TypeError
-    finally:
-        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
-            port = int(DEFAULT_PORT)
-            logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен порт {port}')
-            return port
-
 def get_server_msg(clientsock: socket):
     logger.debug('Жду данные от сервера')
     while True:
@@ -138,7 +122,7 @@ def send_msg(clientsock):
 def main():
     addres = parse_addres_in_cmd(sys.argv)
     port = parse_port_in_cmd(sys.argv)
-    mod = parse_mode_in_cmd(sys.argv)
+
     logger.info(f'Сокет будет привязан к  {(addres, port)}')
     with socket(AF_INET, SOCK_STREAM) as clientsock:
         clientsock.connect((addres, port))
@@ -146,14 +130,18 @@ def main():
         pres = presence_msg()
         send_message(pres, clientsock)
         get_message(clientsock)
-
         get = Thread(target=get_server_msg, args=(clientsock,), daemon=True)
         send = Thread(target=send_msg, args=(clientsock,), daemon=True)
-
         get.start()
         send.start()
         get.join()
         send.join()
+
+    while True:
+        time.sleep(1)
+        if get.is_alive() and send.is_alive():
+            continue
+        break
 
 
 
