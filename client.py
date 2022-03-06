@@ -17,6 +17,7 @@ logger = logging.getLogger('client')
 
 @logs
 def presence_msg() -> dict:
+    msg = {}
     msg = {
         ACTION: 'presence',
         TIME: time.time(),
@@ -51,18 +52,23 @@ def generation_msg(message: str, name: str) -> dict:
 
 @logs
 def parsing_msg(input_date: dict):
-    # logger.debug(f'Получен аргумент {input_date}')
+    logger.debug(f'Получен аргумент {input_date}')
     try:
         if isinstance(input_date, dict):
-            if input_date[RESPONSE] in (200, 400, 104, 105) and input_date[ALERT] and input_date[TIME]:
+            if input_date[RESPONSE] in (200, 400) and input_date[ALERT] and input_date[TIME]:
                 if isinstance(input_date[TIME], float):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                     logger.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
-                    logger.info(f'Закрываю клиент')
-                    sys.exit(1)
-                raise ValueError
+                    return
+            elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
+                    if isinstance(input_date[TIME], float):
+                        timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
+                        logger.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
+                        sys.exit(0)
+
             elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[ACCOUNT_NAME]:
                 return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
+            raise ValueError
         raise TypeError
     finally:
         if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
@@ -142,7 +148,7 @@ def main():
         clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         pres = presence_msg()
         send_message(pres, clientsock)
-        get_message(clientsock)
+        parsing_msg(get_message(clientsock))
 
         get = Thread(target=get_server_msg, args=(clientsock,), daemon=True, name='get')
         send = Thread(target=send_msg, args=(clientsock,), daemon=True, name='send')

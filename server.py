@@ -119,8 +119,6 @@ def main():
         s.settimeout(0.5)
         s.bind((ADDRES, PORT))
         s.listen(5)
-
-
         clients = []
         message_list = []
         while True:
@@ -151,7 +149,7 @@ def main():
                         msg = parsing_msg(data, s_client, message_list, clients)
                     except Exception as e:
                         clients.remove(s_client)
-                        srv_log.debug(sys.exc_info()[0])
+                        srv_log.debug(f'Ошибка при получении - {sys.exc_info()[0]}')
                         srv_log.debug(f"Удалил клинета - {s_client}")
 
             if write:
@@ -160,6 +158,7 @@ def main():
 
                     for message in message_list:
                         if message[1] in clients_dict:
+                            send_dict = {}
                             send_dict = {
                                     RESPONSE: 'message',
                                     ACCOUNT_NAME: message[0],
@@ -167,10 +166,16 @@ def main():
                                     MESSAGE_TEXT: message[2],
                                 }
                             srv_log.debug(f'Формирую {send_dict}')
-                            send_message(send_dict, clients_dict[message[1]])
+                            print(clients_dict[message[1]])
+                            try:
+                                send_message(send_dict, clients_dict[message[1]])
+                            except ValueError:
+                                srv_log.info(sys.exc_info()[0])
+
+
                             srv_log.debug(f'Отправляю {send_dict}')
                             message_list.remove(message)
-                        message_list.remove(message)
+                        # message_list.remove(message)
                 except Exception as e:
                     srv_log.info(sys.exc_info()[0])
                     # raise

@@ -20,9 +20,13 @@ def send_message(msg: dict, sock: socket.socket):
             raise TypeError
         raise TypeError
     finally:
-        if sys.exc_info()[0] in (TypeError, ValueError, OSError):
-            print('send: ', sys.exc_info()[0])
-            return 'Ошибка отправки'
+        if sys.exc_info()[0] in (TypeError, ValueError):
+            # print('send: ', sys.exc_info()[0])
+            return send_message(ANS_105, sock)
+
+        if sys.exc_info()[0] in (ConnectionResetError, OSError):
+            # print('send: ', sys.exc_info()[0])
+            return send_message(ANS_104, sock)
 
 
 @logs
@@ -40,10 +44,10 @@ def get_message(sock: socket.socket):
     finally:
         if sys.exc_info()[0] in (TypeError, ValueError):
             # print('get: ', sys.exc_info()[0])
-            return ANS_105
+            return get_message(ANS_105, sock)
 
         if sys.exc_info()[0] in (ConnectionResetError, OSError):
             # print('get: ', sys.exc_info()[0])
-            return ANS_104
+            return get_message(ANS_104, sock)
 
 
