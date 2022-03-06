@@ -10,7 +10,6 @@ from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_4
 from decorator import logs
 import log.server_log_config
 
-
 srv_log = logging.getLogger('server')
 
 
@@ -23,7 +22,8 @@ def parsing_msg(input_date: dict, sock: socket, message_list: list, clients: lis
                 clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                 srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                 return send_message(ANS_200, sock)
-            elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] and input_date[FROM] != '':
+            elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
+                    and input_date[FROM] != '':
                 message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
                 return message_list
             elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
@@ -91,8 +91,6 @@ def parse_port_in_argv(arg: list):
             return PORT
 
 
-
-
 def serv_acept(s: socket, clients: list):
     try:
         client, addr = s.accept()
@@ -103,12 +101,6 @@ def serv_acept(s: socket, clients: list):
         srv_log.info(f"Запрос на соединение от {addr}")
         clients.append(client)
         return clients
-
-
-
-
-
-
 
 
 def main():
@@ -160,19 +152,15 @@ def main():
                         if message[1] in clients_dict:
                             send_dict = {}
                             send_dict = {
-                                    RESPONSE: 'message',
-                                    ACCOUNT_NAME: message[0],
-                                    FROM: message[1],
-                                    MESSAGE_TEXT: message[2],
-                                }
+                                RESPONSE: 'message',
+                                ACCOUNT_NAME: message[0],
+                                FROM: message[1],
+                                MESSAGE_TEXT: message[2],
+                            }
                             srv_log.debug(f'Формирую {send_dict}')
                             print(clients_dict[message[1]])
-                            try:
-                                send_message(send_dict, clients_dict[message[1]])
-                            except ValueError:
-                                srv_log.info(sys.exc_info()[0])
-
-
+                            send_message(send_dict, clients_dict[message[1]])
+                            srv_log.info(sys.exc_info()[0])
                             srv_log.debug(f'Отправляю {send_dict}')
                             message_list.remove(message)
                         # message_list.remove(message)
@@ -182,17 +170,6 @@ def main():
                     clients.remove(s_client)
                     del clients_dict[message[0]]
                     srv_log.debug(f"Удалил клинета - {s_client}")
-
-
-            # try:
-            #     data = get_message(client)
-            #     msg = parsing_msg(data)
-            #     send_message(msg, client)
-            #     srv_log.info(f'Закрываю соединение с {addr}')
-            #     client.close()
-            # except ConnectionResetError:
-            #     srv_log.error('Произошла ошибка ConnectionResetError, закрываю соединение с клиентом')
-            #     client.close()
 
 
 if __name__ == '__main__':

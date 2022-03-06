@@ -49,5 +49,3 @@ def get_message(sock: socket.socket):
         if sys.exc_info()[0] in (ConnectionResetError, OSError):
             # print('get: ', sys.exc_info()[0])
             return get_message(ANS_104, sock)
-
-
