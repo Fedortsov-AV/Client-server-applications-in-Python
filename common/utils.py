@@ -3,9 +3,11 @@ import os
 import socket
 import sys
 
-from common.variables import MAX_LEN_MSG, ENCODE
 sys.path.append(os.path.join(os.getcwd(), '..'))
+from common.variables import MAX_LEN_MSG, ENCODE, ANS_104, ANS_105
+
 from decorator import logs
+
 
 @logs
 def send_message(msg: dict, sock: socket.socket):
@@ -18,23 +20,32 @@ def send_message(msg: dict, sock: socket.socket):
             raise TypeError
         raise TypeError
     finally:
-        if sys.exc_info()[0] in (TypeError, ValueError, OSError):
-            print('send: ', sys.exc_info()[0])
-            return 'Ошибка отправки'
+        if sys.exc_info()[0] in (TypeError, ValueError):
+            # print('send: ', sys.exc_info()[0])
+            return send_message(ANS_105, sock)
+
+        if sys.exc_info()[0] in (ConnectionResetError, OSError):
+            # print('send: ', sys.exc_info()[0])
+            return send_message(ANS_104, sock)
+
 
 @logs
 def get_message(sock: socket.socket):
+    data = {}
     try:
         if isinstance(sock, socket.socket):
             byte_json_msg = sock.recv(MAX_LEN_MSG)
             json_msg = byte_json_msg.decode(ENCODE)
             data = json.loads(json_msg)
             if isinstance(data, dict):
-                # print(type(data))
                 return data
             return print('Получена неверная структура JSON')
         return print('Неверный тип данных передан в аргументы функции get_message(sock: socket.socket)')
     finally:
-        if sys.exc_info()[0] in (TypeError, ValueError, OSError):
-            print('get: ', sys.exc_info()[0])
-            return 'Ошибка получения'
+        if sys.exc_info()[0] in (TypeError, ValueError):
+            # print('get: ', sys.exc_info()[0])
+            return get_message(ANS_105, sock)
+
+        if sys.exc_info()[0] in (ConnectionResetError, OSError):
+            # print('get: ', sys.exc_info()[0])
+            return get_message(ANS_104, sock)
