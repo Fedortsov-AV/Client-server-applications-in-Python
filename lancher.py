@@ -3,7 +3,7 @@ from subprocess import Popen, CREATE_NEW_CONSOLE
 
 p_list = []
 
-count = 3
+count = 2
 
 while True:
     user = input(f"Запустить {count} клиентов (s) / Закрыть клиентов (x) / Выйти (q) ")
