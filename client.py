@@ -1,3 +1,4 @@
+import dis
 import logging
 import sys
 import time
@@ -8,11 +9,12 @@ from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM
 from decorator import logs
+from meta import ClientVerifier
 
 logger = logging.getLogger('client')
 
 
-class Client():
+class Client(metaclass=ClientVerifier):
     msg = {}
     addres = str
     port = int
@@ -157,6 +159,7 @@ class Client():
             send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
             get.start()
             send.start()
+
 
             while True:
                 time.sleep(1)

@@ -1,4 +1,5 @@
 import logging
+import logging
 import sys
 import time
 from select import select
@@ -8,17 +9,18 @@ from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT
 from decorator import logs
+from meta import ServerVerifier
 import log.server_log_config
 
 srv_log = logging.getLogger('server')
 
-class Server():
+
+class Server(metaclass=ServerVerifier):
     ADDRES = str
     PORT = int
     clients = []
     message_list = []
     clients_dict = dict()
-
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket, message_list: list, clients: list):
@@ -50,7 +52,6 @@ class Server():
                 srv_log.critical(f'Произошла ошибка: {sys.exc_info()[0]}')
                 return send_message(ANS_400, sock)
 
-
     @logs
     def parse_addres_in_argv(self, arg: list):
         # srv_log.debug(f'Получен аргумент: {arg}')
@@ -71,7 +72,6 @@ class Server():
                 self.ADDRES = ''
                 srv_log.warning(f'Установлен адрес: {self.ADDRES}')
                 return self.ADDRES
-
 
     @logs
     def parse_port_in_argv(self, arg: list):
@@ -97,18 +97,6 @@ class Server():
                 srv_log.warning(f'Установлен порт: {self.PORT}')
                 return self.PORT
 
-
-    def serv_acept(self, s: socket, clients: list):
-        try:
-            client, addr = s.accept()
-        except OSError as e:
-            # srv_log.debug(f"Ошибка {e}")
-            return self.clients
-        else:
-            srv_log.info(f"Запрос на соединение от {addr}")
-            self.clients.append(client)
-            return self.clients
-
     def run_server(self):
         self.parse_addres_in_argv(sys.argv)
         self.parse_port_in_argv(sys.argv)
@@ -120,12 +108,18 @@ class Server():
             self.clients = []
             self.message_list = []
             while True:
-                # finally:
                 wait = 0
                 write = []
                 read = []
                 try:
-                    self.clients = self.serv_acept(s, self.clients)
+                    try:
+                        client, addr = s.accept()
+                    except OSError as e:
+                        pass
+                        # srv_log.debug(f"Ошибка {e}")
+                    else:
+                        srv_log.info(f"Запрос на соединение от {addr}")
+                        self.clients.append(client)
                     srv_log.debug(f'All clients - {len(self.clients)}')
                     read, write, error = select(self.clients, self.clients, [], wait)
                     srv_log.debug(f'Write - {len(write)}')
@@ -180,10 +174,12 @@ class Server():
 
 def main():
     server = Server()
+
+    # print(type(byte))
+    # print(byte, sep='\n')
+
     server.run_server()
 
 
-
 if __name__ == '__main__':
-
     main()
