@@ -9,6 +9,7 @@ from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT
 from decorator import logs
+from descriptor import SocketPort
 from meta import ServerVerifier
 import log.server_log_config
 
@@ -17,7 +18,7 @@ srv_log = logging.getLogger('server')
 
 class Server(metaclass=ServerVerifier):
     ADDRES = str
-    PORT = int
+    PORT = SocketPort()
     clients = []
     message_list = []
     clients_dict = dict()
@@ -79,6 +80,7 @@ class Server(metaclass=ServerVerifier):
         try:
             if isinstance(arg, list):
                 if '-p' in arg:
+                    # self.PORT = 77.7
                     if VALID_PORT.findall(arg[sys.argv.index('-p') + 1]):
                         if VALID_PORT.findall(arg[arg.index('-p') + 1])[0]:
                             self.PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
