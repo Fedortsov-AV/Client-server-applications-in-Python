@@ -131,6 +131,8 @@ class Client(metaclass=ClientVerifier):
     def send_msg(self, clientsock) -> None:
         while True:
             name = input('Кому отправить сообщение?\n ')
+            if name == '':
+                logger.error('Получатель не указан')
             logger.debug('Формирую сообщение пользователя')
             str = input('Введите сообщение для отправки (для выхода введите \'exit\'): \n')
             message = self.generation_msg(str, name)

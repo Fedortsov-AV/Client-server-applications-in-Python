@@ -1,5 +1,4 @@
 import logging
-import logging
 import sys
 import time
 from select import select
@@ -12,7 +11,7 @@ from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
 import log.server_log_config
-
+from server_db import session, User, UserHistory
 srv_log = logging.getLogger('server')
 
 
@@ -25,10 +24,18 @@ class Server(metaclass=ServerVerifier):
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket, message_list: list, clients: list):
-        # srv_log.debug(f'Получен аргумент: {input_date}')
+        srv_log.info(f'Получен аргумент: {input_date}')
         try:
             if isinstance(input_date, dict):
                 if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
+                    result = session.query(User).filter_by(username=input_date[USER][ACCOUNT_NAME])
+                    if result.count() == 0:
+                        user = User(input_date[USER][ACCOUNT_NAME], "")
+                        session.add(user)
+                        session.commit()
+                    user_history = UserHistory(result[0].id, sock.getpeername()[0])
+                    session.add(user_history)
+                    session.commit()
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     return send_message(ANS_200, sock)
@@ -71,7 +78,7 @@ class Server(metaclass=ServerVerifier):
         finally:
             if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
                 self.ADDRES = ''
-                srv_log.warning(f'Установлен адрес: {self.ADDRES}')
+                srv_log.info(f'Установлен адрес: {self.ADDRES}')
                 return self.ADDRES
 
     @logs
@@ -96,7 +103,7 @@ class Server(metaclass=ServerVerifier):
         finally:
             if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
                 self.PORT = int(DEFAULT_PORT)
-                srv_log.warning(f'Установлен порт: {self.PORT}')
+                srv_log.info(f'Установлен порт: {self.PORT}')
                 return self.PORT
 
     def run_server(self):
@@ -122,7 +129,6 @@ class Server(metaclass=ServerVerifier):
                     else:
                         srv_log.info(f"Запрос на соединение от {addr}")
                         self.clients.append(client)
-                    srv_log.debug(f'All clients - {len(self.clients)}')
                     read, write, error = select(self.clients, self.clients, [], wait)
                     srv_log.debug(f'Write - {len(write)}')
                     srv_log.debug(f'Read - {len(read)}')
@@ -165,7 +171,7 @@ class Server(metaclass=ServerVerifier):
                                 srv_log.info(sys.exc_info()[0])
                                 srv_log.debug(f'Отправляю {send_dict}')
                                 self.message_list.remove(message)
-                            # message_list.remove(message)
+
                     except Exception as e:
                         srv_log.info(sys.exc_info()[0])
                         # raise
@@ -176,10 +182,6 @@ class Server(metaclass=ServerVerifier):
 
 def main():
     server = Server()
-
-    # print(type(byte))
-    # print(byte, sep='\n')
-
     server.run_server()
 
 
