@@ -86,6 +86,9 @@ class UserClient(metaclass=ClientVerifier):
 
                 elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[
                     ACCOUNT_NAME]:
+                    item = MessageHistory(input_date[ACCOUNT_NAME],input_date[FROM], input_date[MESSAGE_TEXT])
+                    session.add(item)
+                    session.comit()
                     return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
                 raise ValueError
             raise TypeError
@@ -139,7 +142,7 @@ class UserClient(metaclass=ClientVerifier):
         while True:
             data = get_message(clientsock)
             logger.debug('Разбираю ответ сервера')
-            # print(self.parsing_msg(data))
+            print(self.parsing_msg(data))
 
     def send_msg(self, clientsock) -> None:
         while True:
