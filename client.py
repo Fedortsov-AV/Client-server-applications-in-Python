@@ -183,7 +183,9 @@ class Client(metaclass=ClientVerifier):
             pres = self.presence_msg()
             send_message(pres, clientsock)
             self.parsing_msg(get_message(clientsock))
-            # self.add_contact(2)
+            # time.sleep(2)
+            self.parsing_msg(get_message(clientsock))
+            # self.add_contact('Александр1')
             # self.parsing_msg(get_message(clientsock))
 
             get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')

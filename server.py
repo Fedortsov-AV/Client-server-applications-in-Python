@@ -32,6 +32,7 @@ class Server(metaclass=ServerVerifier):
             if isinstance(input_date, dict):
                 if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
                     response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0])
+                    ANS_200[ALERT] = "OK"
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = contact_list(input_date[USER][ACCOUNT_NAME])
