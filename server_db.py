@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import sleep
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -26,8 +25,6 @@ class User(Base):
     def __init__(self, username, info):
         self.username = username
         self.info = info
-
-
 
     def __repr__(self):
         return f'<User({self.username}, {self.info}, {self.created_on})>'
@@ -59,21 +56,17 @@ class UserContact(Base):
         self.contact = contact
         self.user_id = user_id
 
-def contact_list(name: str) -> dict:
+
+def contact_list(name: str) -> list:
     user = session.query(User).filter_by(username=name)
     list = session.query(UserContact).filter_by(user_id=user[0].id)
-    contact_dict ={}
+    list_contact = []
     for set in list.all():
-        contact = session.query(User).filter_by(username=set.contact)
-        contact_dict[contact[0].username] = {
-            'id': contact[0].id,
-            'username': contact[0].username,
-            'online': contact[0].online,
-        }
+        list_contact.append(set.contact)
+    return list_contact
 
-    return contact_dict
 
-def add_contact(username:str, user_contact:str) -> bool:
+def add_contact(username: str, user_contact: str) -> bool:
     try:
         user = session.query(User).filter_by(username=username)
         verify_cont = session.query(UserContact).filter_by(user_id=user[0].id, contact=user_contact)
@@ -90,13 +83,12 @@ def add_contact(username:str, user_contact:str) -> bool:
         return False
 
 
-def delete_contact(username:str, user_contact:str) -> None:
+def delete_contact(username: str, user_contact: str) -> None:
     user = session.query(User).filter_by(username=username).first()
     contact = session.query(UserContact).filter_by(user_id=user.id, contact=user_contact).first()
     data = UserContact(user.id, contact.username)
     session.add(data)
     session.commit()
-
 
 
 def response_user(username: str, ip: str) -> None:
@@ -112,9 +104,6 @@ def response_user(username: str, ip: str) -> None:
     session.commit()
 
 
-
-
-
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -122,7 +111,8 @@ session = Session()
 if __name__ == '__main__':
     # print(contact_list("1"))
     # print(add_contact(1, 'User5'))
-    response_user('1', '192.168.1.1')
+    contact_list(1)
+    # response_user('1', '192.168.1.1')
     # result = session.query(User).filter_by(username='User4')
     # print('rows count: ', result.count())
     # print('result[0].id: ', result[0])

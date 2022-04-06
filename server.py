@@ -1,7 +1,6 @@
 import logging
 import sys
 import time
-from pprint import pprint
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
@@ -11,9 +10,8 @@ from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_4
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
-from log import server_log_config
-
-from server_db import session, User, UserHistory, response_user, contact_list, add_contact, delete_contact
+from server_db import session, User, response_user, contact_list, add_contact, delete_contact
+import log.server_log_config
 
 srv_log = logging.getLogger('server')
 
@@ -36,6 +34,7 @@ class Server(metaclass=ServerVerifier):
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = contact_list(input_date[USER][ACCOUNT_NAME])
+                    print(ANS_202[CONTACT])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     send_message(ANS_202, sock)
                     return
@@ -192,7 +191,6 @@ class Server(metaclass=ServerVerifier):
                         self.clients.remove(s_client)
                         del self.clients_dict[message[0]]
                         srv_log.debug(f"Удалил клиента - {s_client}")
-
 
 
 def main():

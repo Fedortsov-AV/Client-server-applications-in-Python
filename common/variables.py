@@ -21,6 +21,7 @@ CONTACT_NAME = 'CONTACT_NAME'
 ADD_CONTACT = "ADD_CONTACT"
 DEL_CONTACT = "DEL_CONTACT"
 CONTACT = 'CONTACT'
+USER_NAME = 'guest'
 
 
 ANS_200 = {
@@ -34,7 +35,7 @@ ANS_202 = {
     ACTION: ALERT,
     RESPONSE: 202,
     ALERT: 'Список контактов',
-    CONTACT: dict,
+    CONTACT: list,
     TIME: time.time()
 }
 

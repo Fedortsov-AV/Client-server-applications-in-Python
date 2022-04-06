@@ -1,26 +1,27 @@
-import dis
+import logging
 import logging
 import sys
 import time
-from pprint import pprint
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
 import log.client_log_config
+from client_db import MessageHistory, init_db, UserContact
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
-    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT
+    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT
 from decorator import logs
 from meta import ClientVerifier
 
 logger = logging.getLogger('client')
 
 
-class Client(metaclass=ClientVerifier):
+class UserClient(metaclass=ClientVerifier):
     msg = {}
     addres = str
     port = int
-    user_name = 'guest'
+    user_name = USER_NAME
     contact_dict = dict
+    list_contact = []
     socket = None
 
     @logs
@@ -55,6 +56,7 @@ class Client(metaclass=ClientVerifier):
                 MESSAGE_TEXT: message,
                 FROM: name,
             }
+
         logger.debug(f'сформировано сообщение {self.msg}')
         return self.msg
 
@@ -68,8 +70,13 @@ class Client(metaclass=ClientVerifier):
                         timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                         logger.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
                         if input_date[RESPONSE] == 202:
-                            self.contact_dict = input_date['CONTACT']
-                        # pprint(self.contact_dict)
+                            for i in input_date[CONTACT]:
+                                self.list_contact.append(i)
+                                result = session.query(UserContact).filter_by(contact=i)
+                                if result.count() == 0:
+                                    contact = UserContact(i)
+                                    session.add(contact)
+                                    session.commit()
                         return
                 elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
@@ -144,35 +151,34 @@ class Client(metaclass=ClientVerifier):
             message = self.generation_msg(str, name)
             logger.debug('Отправляю сообщение на сервер')
             send_message(message, clientsock)
+            user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
+            session.add(user_msg)
+            session.commit()
             if message[ACTION] == 'EXIT':
                 self.socket = None
                 time.sleep(0.7)
                 break
 
     def add_contact(self, contact_name: str) -> None:
-         self.msg ={
+        self.msg = {
             ACTION: ADD_CONTACT,
             CONTACT_NAME: contact_name,
             TIME: time.time(),
             ACCOUNT_NAME: self.user_name,
-         }
-         return send_message(self.msg, self.socket)
+        }
+        return send_message(self.msg, self.socket)
 
     def del_contact(self, contact_name: str):
-         self.msg ={
+        self.msg = {
             ACTION: DEL_CONTACT,
             CONTACT_NAME: contact_name,
             TIME: time.time(),
             ACCOUNT_NAME: self.user_name,
-         }
-         return send_message(self.msg, self.socket)
-
-        # def client_socet_init(self):
-        #     addres = self.parse_addres_in_cmd(sys.argv)
-        #     port = self.parse_port_in_cmd(sys.argv)
+        }
+        return send_message(self.msg, self.socket)
 
     def run_client(self):
-        self.user_name = input('Введите ваше имя: ')
+
         self.parse_addres_in_cmd(sys.argv)
         self.parse_port_in_cmd(sys.argv)
         logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
@@ -183,16 +189,11 @@ class Client(metaclass=ClientVerifier):
             pres = self.presence_msg()
             send_message(pres, clientsock)
             self.parsing_msg(get_message(clientsock))
-            # time.sleep(2)
             self.parsing_msg(get_message(clientsock))
-            # self.add_contact('Александр1')
-            # self.parsing_msg(get_message(clientsock))
-
             get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')
             send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
             get.start()
             send.start()
-
 
             while True:
                 time.sleep(1)
@@ -202,7 +203,12 @@ class Client(metaclass=ClientVerifier):
 
 
 def main():
-    client = Client()
+    client = UserClient()
+    client.user_name = input('Введите ваше имя: ')
+    global session
+    session = init_db(client.user_name)
+    print('Main session ', session)
+
     client.run_client()
 
 
