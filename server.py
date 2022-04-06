@@ -1,17 +1,20 @@
 import logging
 import sys
 import time
+from pprint import pprint
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
-    MESSAGE_TEXT, FROM, RESPONSE, ALERT
+    MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
-import log.server_log_config
-from server_db import session, User, UserHistory
+from log import server_log_config
+
+from server_db import session, User, UserHistory, response_user, contact_list, add_contact, delete_contact
+
 srv_log = logging.getLogger('server')
 
 
@@ -23,34 +26,49 @@ class Server(metaclass=ServerVerifier):
     clients_dict = dict()
 
     @logs
-    def parsing_msg(self, input_date: dict, sock: socket, message_list: list, clients: list):
+    def parsing_msg(self, input_date: dict, sock: socket) -> None:
         srv_log.info(f'Получен аргумент: {input_date}')
         try:
             if isinstance(input_date, dict):
                 if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
-                    result = session.query(User).filter_by(username=input_date[USER][ACCOUNT_NAME])
-                    if result.count() == 0:
-                        user = User(input_date[USER][ACCOUNT_NAME], "")
-                        session.add(user)
-                        session.commit()
-                    user_history = UserHistory(result[0].id, sock.getpeername()[0])
-                    session.add(user_history)
-                    session.commit()
+                    response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0])
+                    send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
+                    ANS_202[CONTACT] = contact_list(input_date[USER][ACCOUNT_NAME])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
-                    return send_message(ANS_200, sock)
+                    send_message(ANS_202, sock)
+                    return
                 elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
-                    message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
-                    return message_list
+                    self.message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
+                    return
                 elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
+                    result = session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
+                    result[0].online = False
+                    session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
-                    srv_log.debug(f"Удалил клинета - {input_date[ACCOUNT_NAME]}")
+                    srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
                     return
                 elif input_date[ACTION] == ALERT and input_date[RESPONSE] in (104, 105):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                     srv_log.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
-                    clients.remove(sock)
+                    self.clients.remove(sock)
+                    return
+                elif input_date[ACTION] == ADD_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
+                    if not add_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
+                        ANS_200[ALERT] = 'Не удалось добавить контакт'
+                        send_message(ANS_200, sock)
+                        return
+                    ANS_200[ALERT] = 'Контакт успешно добавлен'
+                    send_message(ANS_200, sock)
+                    return
+                elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
+                    if not delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
+                        ANS_200[ALERT] = 'Не удалось найти/удалить контакт'
+                        send_message(ANS_200, sock)
+                        return
+                    ANS_200[ALERT] = 'Контакт успешно удален'
+                    send_message(ANS_200, sock)
                     return
 
                 raise KeyError
@@ -133,12 +151,7 @@ class Server(metaclass=ServerVerifier):
                     srv_log.debug(f'Write - {len(write)}')
                     srv_log.debug(f'Read - {len(read)}')
                     srv_log.debug(f'message_list - {self.message_list}')
-                    # srv_log.debug(
-                    #         f"Прошел селект \n"
-                    #         f'read - {read}\n'
-                    #         f'write - {write}\n')
                 except Exception:
-                    # srv_log.debug('Exception под select', sys.exc_info()[0])
                     pass
 
                 if read:
@@ -146,11 +159,11 @@ class Server(metaclass=ServerVerifier):
                         try:
                             data = get_message(s_client)
                             srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
-                            msg = self.parsing_msg(data, s_client, self.message_list, self.clients)
+                            msg = self.parsing_msg(data, s_client)
                         except Exception as e:
                             self.clients.remove(s_client)
                             srv_log.debug(f'Ошибка при получении - {sys.exc_info()[0]}')
-                            srv_log.debug(f"Удалил клинета - {s_client}")
+                            srv_log.debug(f"Удалил клиента - {s_client}")
 
                 if write:
                     srv_log.debug(f'Отправляю клиенту')
@@ -177,7 +190,8 @@ class Server(metaclass=ServerVerifier):
                         # raise
                         self.clients.remove(s_client)
                         del self.clients_dict[message[0]]
-                        srv_log.debug(f"Удалил клинета - {s_client}")
+                        srv_log.debug(f"Удалил клиента - {s_client}")
+
 
 
 def main():

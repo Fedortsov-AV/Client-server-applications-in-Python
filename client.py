@@ -2,12 +2,13 @@ import dis
 import logging
 import sys
 import time
+from pprint import pprint
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
 import log.client_log_config
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
-    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM
+    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT
 from decorator import logs
 from meta import ClientVerifier
 
@@ -19,6 +20,8 @@ class Client(metaclass=ClientVerifier):
     addres = str
     port = int
     user_name = 'guest'
+    contact_dict = dict
+    socket = None
 
     @logs
     def presence_msg(self) -> dict:
@@ -37,7 +40,7 @@ class Client(metaclass=ClientVerifier):
     @logs
     def generation_msg(self, message: str, name: str) -> dict:
         self.msg = {}
-        if message == 'exit':
+        if message.lower() == 'exit':
             self.msg = {
                 ACTION: 'EXIT',
                 TIME: time.time(),
@@ -60,10 +63,13 @@ class Client(metaclass=ClientVerifier):
         logger.debug(f'Получен аргумент {input_date}')
         try:
             if isinstance(input_date, dict):
-                if input_date[RESPONSE] in (200, 400) and input_date[ALERT] and input_date[TIME]:
+                if input_date[RESPONSE] in (200, 202, 400) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
                         timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                         logger.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
+                        if input_date[RESPONSE] == 202:
+                            self.contact_dict = input_date['CONTACT']
+                        # pprint(self.contact_dict)
                         return
                 elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
@@ -126,7 +132,7 @@ class Client(metaclass=ClientVerifier):
         while True:
             data = get_message(clientsock)
             logger.debug('Разбираю ответ сервера')
-            print(self.parsing_msg(data))
+            # print(self.parsing_msg(data))
 
     def send_msg(self, clientsock) -> None:
         while True:
@@ -139,8 +145,27 @@ class Client(metaclass=ClientVerifier):
             logger.debug('Отправляю сообщение на сервер')
             send_message(message, clientsock)
             if message[ACTION] == 'EXIT':
+                self.socket = None
                 time.sleep(0.7)
                 break
+
+    def add_contact(self, contact_name: str) -> None:
+         self.msg ={
+            ACTION: ADD_CONTACT,
+            CONTACT_NAME: contact_name,
+            TIME: time.time(),
+            ACCOUNT_NAME: self.user_name,
+         }
+         return send_message(self.msg, self.socket)
+
+    def del_contact(self, contact_name: str):
+         self.msg ={
+            ACTION: DEL_CONTACT,
+            CONTACT_NAME: contact_name,
+            TIME: time.time(),
+            ACCOUNT_NAME: self.user_name,
+         }
+         return send_message(self.msg, self.socket)
 
         # def client_socet_init(self):
         #     addres = self.parse_addres_in_cmd(sys.argv)
@@ -152,11 +177,15 @@ class Client(metaclass=ClientVerifier):
         self.parse_port_in_cmd(sys.argv)
         logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
         with socket(AF_INET, SOCK_STREAM) as clientsock:
+            self.socket = clientsock
             clientsock.connect((self.addres, self.port))
             clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             pres = self.presence_msg()
             send_message(pres, clientsock)
             self.parsing_msg(get_message(clientsock))
+            # self.add_contact(2)
+            # self.parsing_msg(get_message(clientsock))
+
             get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')
             send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
             get.start()
