@@ -127,13 +127,13 @@ class Server(metaclass=ServerVerifier):
                 srv_log.info(f'Установлен порт: {self.PORT}')
                 return self.PORT
 
-    def run_server(self):
-        self.parse_addres_in_argv(sys.argv)
-        self.parse_port_in_argv(sys.argv)
-        srv_log.info(f'Сокет будет привязан к  {(self.ADDRES, self.PORT)}')
+    def run_server(self, addres, port):
+        # self.parse_addres_in_argv(sys.argv)
+        # self.parse_port_in_argv(sys.argv)
+        srv_log.info(f'Сокет будет привязан к  {(addres, port)}')
         with socket(AF_INET, SOCK_STREAM) as s:
             s.settimeout(0.5)
-            s.bind((self.ADDRES, self.PORT))
+            s.bind((addres, port))
             s.listen(5)
             self.clients = []
             self.message_list = []
