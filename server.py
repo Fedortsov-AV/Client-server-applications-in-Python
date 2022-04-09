@@ -13,7 +13,7 @@ from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
 
-from server_db import User, contact_list, UserContact, UserHistory
+from server_db import User, UserContact, UserHistory
 import log.server_log_config
 
 srv_log = logging.getLogger('server')
@@ -38,7 +38,7 @@ class Server(metaclass=ServerVerifier):
                     ANS_200[ALERT] = "OK"
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
-                    ANS_202[CONTACT] = contact_list(input_date[USER][ACCOUNT_NAME])
+                    ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
                     print(ANS_202[CONTACT])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     send_message(ANS_202, sock)
@@ -49,7 +49,7 @@ class Server(metaclass=ServerVerifier):
                     return
                 elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
                     result = self.session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
-                    result[0].online = 0
+                    result.first().online = 0
                     self.session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
                     srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
@@ -237,10 +237,18 @@ class Server(metaclass=ServerVerifier):
             user = User(username, "")
             self.session.add(user)
             self.session.commit()
-        user_history = UserHistory(result.first().id, ip)
+        user_history = UserHistory(result.first().id, ip, result.first().username )
         self.session.add(user_history)
-        result[0].online = 1
+        result.first().online = 1
         self.session.commit()
+
+    def contact_list(self, name: str) -> list:
+        user = self.session.query(User).filter_by(username=name)
+        list = self.session.query(UserContact).filter_by(user_id=user[0].id)
+        list_contact = []
+        for set in list.all():
+            list_contact.append(set.contact)
+        return list_contact
 
 def main():
 

@@ -24,9 +24,9 @@ def init_db(path: str, name: str) -> object:
     # print('init_db session ', session)
     return session
 
-path_bd = 'DateBase/'
-file_name_bd = 'serv_db.db3'
-session = init_db(path_bd, file_name_bd)
+# path_bd = 'DateBase/'
+# file_name_bd = 'serv_db.db3'
+# session = init_db(path_bd, file_name_bd)
 
 class User(Base):
     __tablename__ = 'users'
@@ -54,11 +54,10 @@ class UserHistory(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     username = Column(String(50))
 
-    def __init__(self, user_id, ip_addres):
+    def __init__(self, user_id, ip_addres, username):
         self.user_id = user_id
         self.ip_addres = ip_addres
-        res = session.query(User).filter_by(id=user_id)
-        self.username = res[0].username
+        self.username = username
 
 
 class UserContact(Base):
@@ -73,13 +72,7 @@ class UserContact(Base):
         self.user_id = user_id
 
 
-def contact_list(name: str) -> list:
-    user = session.query(User).filter_by(username=name)
-    list = session.query(UserContact).filter_by(user_id=user[0].id)
-    list_contact = []
-    for set in list.all():
-        list_contact.append(set.contact)
-    return list_contact
+
 
 
 # Base.metadata.create_all(engine)

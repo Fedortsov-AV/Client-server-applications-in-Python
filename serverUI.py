@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
                 self.table_widget.setItem(row, 2, QTableWidgetItem(history[0].ip_addres))
                 self.table_widget.setItem(row, 3, QTableWidgetItem(str(history[0].login_time)))
                 # print(f'{activ_users[row].online} - {activ_users[row].username}')
-                if activ_users[row].online == True:
+                if activ_users[row].online == 1:
                     delta = datetime.now() - history[0].login_time
                     self.table_widget.setItem(row, 4, QTableWidgetItem(str(delta)))
 
@@ -182,7 +182,7 @@ class MainWindow(QMainWindow):
                 self.window1.tableWidget.setItem(row, 1, QTableWidgetItem(activ_users[row].username))
                 if history.count() > 0:
                     self.window1.tableWidget.setItem(row, 2, QTableWidgetItem(history[0].ip_addres))
-                    if activ_users[row].online == True:
+                    if activ_users[row].online == 1:
                         delta = datetime.now() - history[0].login_time
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
