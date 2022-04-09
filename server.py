@@ -25,6 +25,7 @@ class Server(metaclass=ServerVerifier):
     clients = []
     message_list = []
     clients_dict = dict()
+    flag_socket = False
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
@@ -127,17 +128,24 @@ class Server(metaclass=ServerVerifier):
                 srv_log.info(f'Установлен порт: {self.PORT}')
                 return self.PORT
 
+    def run_socket(self):
+        if self.flag_socket == False:
+            s = socket(AF_INET, SOCK_STREAM)
+            self.flag_socket = True
+            return s
+
+
     def run_server(self, addres, port):
         # self.parse_addres_in_argv(sys.argv)
         # self.parse_port_in_argv(sys.argv)
-        srv_log.info(f'Сокет будет привязан к  {(addres, port)}')
-        with socket(AF_INET, SOCK_STREAM) as s:
+        with self.run_socket() as s:
             s.settimeout(0.5)
+            srv_log.info(f'Сокет будет привязан к  {(addres, port)}')
             s.bind((addres, port))
             s.listen(5)
             self.clients = []
             self.message_list = []
-            while True:
+            while self.flag_socket:
                 wait = 0
                 write = []
                 read = []
@@ -194,6 +202,10 @@ class Server(metaclass=ServerVerifier):
                         self.clients.remove(s_client)
                         del self.clients_dict[message[0]]
                         srv_log.debug(f"Удалил клиента - {s_client}")
+            # print('Закрываю сокет')
+            srv_log.info(f"Закрываю сокет")
+            s.close()
+            srv_log.info(f"Сокет закрыт")
 
 
 def main():

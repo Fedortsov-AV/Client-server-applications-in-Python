@@ -23,7 +23,7 @@ class ServerVerifier(type):
 
     def __new__(cls, clsname, bases, clsdict):
 
-        code = dis.code_info(clsdict['run_server'])
+        code = dis.code_info(clsdict['run_socket'])
 
         if code.find('connect') >= 0:
             raise Exception('Сервер не может вызывать метод  connect для сокетов')

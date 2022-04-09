@@ -1,10 +1,12 @@
 import sys
 from datetime import datetime
+from time import sleep
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QAction, QApplication, QTableWidget, QTableWidgetItem, QComboBox, QLabel, \
-    QWidget
+    QWidget, QToolBar
 
 from server import Server
 from server_db import session, User, UserHistory
@@ -45,6 +47,7 @@ class ListUsers(QWidget):
 class SettingServer(QWidget):
     def __init__(self):
         super().__init__()
+        self.server = None
         self.setGeometry(QtCore.QRect(100, 100, 400, 139))
         self.setWindowTitle('Настройки сервера')
 
@@ -72,7 +75,7 @@ class SettingServer(QWidget):
         self.pushButton.setText("Запустить сервер")
         self.pushButton.setShortcut('Ctrl+R')
         self.pushButton.setToolTip('Запустить сервер')
-        self.pushButton.clicked.connect(self.run_serv)
+        self.pushButton.clicked.connect(self.run_server)
 
         # run.triggered.connect(self.run_serv)
 
@@ -114,15 +117,11 @@ class SettingServer(QWidget):
 
         self.lineEdit.setText(text)
 
-    def run_serv(self):
-        self.thread = QtCore.QThread()
-
-        self.serv = StartServer()
-        self.serv.address = self.lineEdit_3.text()
-        self.serv.port = int(self.lineEdit_4.text())
-        self.serv.moveToThread(self.thread)
-        self.thread.started.connect(self.serv.run)
-        self.thread.start()
+    def run_server(self):
+        if not self.server.running:
+            self.server.address = self.lineEdit_3.text()
+            self.server.port = int(self.lineEdit_4.text())
+            self.server.initSRV()
 
 
 # Класс для создания объекта работающего в другом потоке
@@ -130,17 +129,39 @@ class StartServer(QtCore.QObject):
     running = False
     port = None
     address = None
+    serv = None
+
+    def __init__(self):
+        super().__init__()
+        self.serv = Server()
+        self.thread = QtCore.QThread()
+        self.moveToThread(self.thread)
+        self.thread.started.connect(self.run)
+
+
+    def initSRV(self):
+        # print(f'self.serv in init - {self.serv}')
+        self.running = True
+        self.thread.start()
+
+    def stop_server(self):
+        if self.running:
+            self.serv.flag_socket = False
+            self.running = False
+            sleep(1)
+            self.thread.terminate()
 
     # метод, для старта сервера в отдельном потоке
     def run(self):
-        serv = Server()
-        serv.run_server(self.address, self.port)
+        self.serv.run_server(self.address, self.port)
 
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.server = StartServer()
 
         # Формируем окна Активные пользователи и История пользователей
         self.window1 = ListUsers()
@@ -180,7 +201,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.table_widget)
 
         # Формируем обрабатываемые действия
-        exitAction = QAction('Exit', self)
+        exitAction = QAction(QIcon('exit.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
@@ -196,13 +217,28 @@ class MainWindow(QMainWindow):
         user_history.triggered.connect(self.win2)
 
         setting_server = QAction('Настройка сервера', self)
-        setting_server.setShortcut('Ctrl+S')
+        setting_server.setShortcut('Ctrl+R')
         setting_server.setStatusTip('Настройка сервера')
         setting_server.triggered.connect(self.win3)
 
-        # Формируем статусбар и меню
-        self.statusBar()
+        start_server = QAction(QIcon('play.png'), 'Запустить сервер', self)
+        start_server.setShortcut('Ctrl+P')
+        start_server.setStatusTip('Запуск сервера')
+        start_server.triggered.connect(self.run_serv)
+
+        stop_server = QAction(QIcon('stop.png'), 'Остановить сервер', self)
+        stop_server.setShortcut('Ctrl+S')
+        stop_server.setStatusTip('Остановить сервер')
+        stop_server.triggered.connect(self.stop_server)
+
+        # Формируем статусбар, тоолбар и меню
+        self.status = self.statusBar()
         menubar = self.menuBar()
+        self.toolbar = self.addToolBar('Запуск сервера')
+        self.toolbar.addAction(start_server)
+        self.toolbar.addAction(stop_server)
+        self.toolbar.addAction(exitAction)
+
 
         # Меню файл (Выход)
         fileMenu = menubar.addMenu('Файл')
@@ -238,6 +274,7 @@ class MainWindow(QMainWindow):
             self.window3.hide()
         else:
             self.window3.show()
+            self.window3.server = self.server
 
     def maintable(self):
         activ_users = session.query(User)
@@ -287,6 +324,19 @@ class MainWindow(QMainWindow):
                     if activ_users[row].online == True:
                         delta = datetime.now() - history[0].login_time
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
+
+    def run_serv(self):
+        # print(self.server.running)
+        if not self.server.running:
+            self.server.address = self.window3.lineEdit_3.text()
+            self.server.port = int(self.window3.lineEdit_4.text())
+            self.server.initSRV()
+
+    def stop_server(self):
+        # print(self.server.running)
+        if self.server.running:
+            self.server.stop_server()
+
 
 
 if __name__ == '__main__':
