@@ -1,10 +1,11 @@
+import os
 import sys
 from datetime import datetime
 
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMainWindow, QAction, QApplication, QTableWidget, QTableWidgetItem, QComboBox, QLabel, \
-    QWidget
+    QWidget, QFileDialog
 
 from server import Server
 from server_db import session, User, UserHistory
@@ -45,16 +46,20 @@ class ListUsers(QWidget):
 class SettingServer(QWidget):
     def __init__(self):
         super().__init__()
-        self.setGeometry(QtCore.QRect(100, 100, 227, 139))
+        self.setGeometry(QtCore.QRect(100, 100, 400, 139))
         self.setWindowTitle('Настройки сервера')
 
         self.lineEdit = QtWidgets.QLineEdit()
         self.lineEdit_2 = QtWidgets.QLineEdit()
+        self.lineEdit_2.setText('serv_db.db3')
         self.lineEdit_3 = QtWidgets.QLineEdit()
+        self.lineEdit_3.setText('')
         self.lineEdit_4 = QtWidgets.QLineEdit()
+        self.lineEdit_4.setText('7777')
 
         self.toolButton = QtWidgets.QToolButton()
         self.toolButton.setText("Обзор")
+        self.toolButton.clicked.connect(self.startToListen)
 
         self.label = QtWidgets.QLabel()
         self.label.setText("Имя файла БД")
@@ -97,6 +102,28 @@ class SettingServer(QWidget):
         self.verticalLayout.addWidget(self.pushButton)
 
         self.setLayout(self.verticalLayout)
+
+    def startToListen(self):
+        path = QtWidgets.QFileDialog.getOpenFileName()[0]
+        self.lineEdit_2.setText(path.split('/')[-1])
+        split_list = path.split('/')
+        text = ''
+        for _ in range(0, len(split_list) - 1):
+            text = text + split_list[_]
+            if _ != (len(split_list) - 2):
+                text = text + '/'
+
+        self.lineEdit.setText(text)
+
+
+
+
+        names = []
+        # for index in range(count, self.playlist.mediaCount()):
+        #     names.append(self.playlist.media(index).canonicalUrl().path())
+        # self.addClicked(names)
+
+
 
     def run_serv(self):
         self.thread = QtCore.QThread()
@@ -193,8 +220,8 @@ class MainWindow(QMainWindow):
 
         # Меню обзор (Подключенные пользователи, История подключений)
         serv_action = menubar.addMenu('Действия')
-        search.addAction(setting_server)
-        search.addAction(user_history)
+        serv_action.addAction(setting_server)
+
 
         self.timer.start()
         self.setGeometry(100, 100, 600, 250)
