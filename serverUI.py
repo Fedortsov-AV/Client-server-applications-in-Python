@@ -1,5 +1,6 @@
 import sys
-from datetime import datetime
+from datetime import datetime, time
+from subprocess import CREATE_NEW_CONSOLE, Popen
 from time import sleep
 
 from PyQt5 import QtWidgets, QtCore
@@ -135,7 +136,7 @@ class MainWindow(QMainWindow):
             self.window3.server = self.server
 
     def maintable(self):
-        print(self.session)
+        # print(self.session)
         activ_users = self.session.query(User)
         self.table_widget.clearContents()
         self.table_widget.setRowCount(activ_users.count())
@@ -343,6 +344,10 @@ class StartServer(QtCore.QObject):
         # print(f'self.serv in init - {self.serv}')
         self.running = True
         self.thread.start()
+        sleep(3)
+        for _ in range(2):
+            Popen('python client.py 127.0.0.1 7777', creationflags=CREATE_NEW_CONSOLE)
+        print(f'Запущено {2} клиента')
 
     def stop_server(self):
         if self.running:
@@ -355,7 +360,8 @@ class StartServer(QtCore.QObject):
     def run(self):
         self.serv.session = session
         self.serv.run_server(self.address, self.port)
-        print(self.serv.session)
+
+
 
 
 def main():

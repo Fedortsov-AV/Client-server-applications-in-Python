@@ -5,12 +5,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
+
 # engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
 # if not database_exists(engine.url):
 #     create_database(engine.url)
 
+
+Base = declarative_base()
+
 def init_db(path: str, name: str) -> object:
-    engine = create_engine(f'sqlite:///{path}{name}', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
+    engine = create_engine(f'sqlite:///{path}{name}', echo=False, pool_recycle=7200,
+                           connect_args={'check_same_thread': False})
     if not database_exists(engine.url):
         create_database(engine.url)
     Base.metadata.create_all(engine)
@@ -19,8 +24,9 @@ def init_db(path: str, name: str) -> object:
     # print('init_db session ', session)
     return session
 
-Base = declarative_base()
-
+path_bd = 'DateBase/'
+file_name_bd = 'serv_db.db3'
+session = init_db(path_bd, file_name_bd)
 
 class User(Base):
     __tablename__ = 'users'
@@ -74,9 +80,6 @@ def contact_list(name: str) -> list:
     for set in list.all():
         list_contact.append(set.contact)
     return list_contact
-
-
-
 
 
 # Base.metadata.create_all(engine)
