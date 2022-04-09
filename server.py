@@ -4,15 +4,12 @@ import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
-
-
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
-
 from server_db import User, UserContact, UserHistory
 import log.server_log_config
 
@@ -135,7 +132,6 @@ class Server(metaclass=ServerVerifier):
             self.flag_socket = True
             return s
 
-
     def run_server(self, addres, port):
         # self.parse_addres_in_argv(sys.argv)
         # self.parse_port_in_argv(sys.argv)
@@ -237,7 +233,7 @@ class Server(metaclass=ServerVerifier):
             user = User(username, "")
             self.session.add(user)
             self.session.commit()
-        user_history = UserHistory(result.first().id, ip, result.first().username )
+        user_history = UserHistory(result.first().id, ip, result.first().username)
         self.session.add(user_history)
         result.first().online = 1
         self.session.commit()
@@ -250,8 +246,8 @@ class Server(metaclass=ServerVerifier):
             list_contact.append(set.contact)
         return list_contact
 
-def main():
 
+def main():
     server = Server()
     server.run_server()
 
