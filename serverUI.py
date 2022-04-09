@@ -1,5 +1,5 @@
 import sys
-from datetime import datetime, time
+from datetime import datetime
 from subprocess import CREATE_NEW_CONSOLE, Popen
 from time import sleep
 
@@ -115,6 +115,7 @@ class MainWindow(QMainWindow):
         self.timer.start()
         self.setGeometry(100, 100, 600, 250)
         self.setWindowTitle('Main window')
+        self.setStatusTip('Сервер остановлен')
 
     def win2(self):
         if self.window2.isVisible():
@@ -188,6 +189,7 @@ class MainWindow(QMainWindow):
 
     def run_serv(self):
         # print(self.server.running)
+        self.setStatusTip('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
             self.server.address = self.window3.lineEdit_3.text()
@@ -197,6 +199,7 @@ class MainWindow(QMainWindow):
     def stop_server(self):
         # print(self.server.running)
         if self.server.running:
+            self.setStatusTip('Сервер остановлен')
             self.server.stop_server()
 
     def new_session(self):
@@ -360,8 +363,6 @@ class StartServer(QtCore.QObject):
     def run(self):
         self.serv.session = session
         self.serv.run_server(self.address, self.port)
-
-
 
 
 def main():
