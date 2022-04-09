@@ -13,7 +13,7 @@ from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
 
-from server_db import session, User, response_user, contact_list, add_contact, delete_contact
+from server_db import User, contact_list, UserContact, UserHistory
 import log.server_log_config
 
 srv_log = logging.getLogger('server')
@@ -26,6 +26,7 @@ class Server(metaclass=ServerVerifier):
     message_list = []
     clients_dict = dict()
     flag_socket = False
+    session = None
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
@@ -33,7 +34,7 @@ class Server(metaclass=ServerVerifier):
         try:
             if isinstance(input_date, dict):
                 if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
-                    response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0])
+                    self.response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0])
                     ANS_200[ALERT] = "OK"
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
@@ -47,9 +48,9 @@ class Server(metaclass=ServerVerifier):
                     self.message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
                     return
                 elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
-                    result = session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
+                    result = self.session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
                     result[0].online = 0
-                    session.commit()
+                    self.session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
                     srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
                     return
@@ -59,7 +60,7 @@ class Server(metaclass=ServerVerifier):
                     self.clients.remove(sock)
                     return
                 elif input_date[ACTION] == ADD_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
-                    if not add_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
+                    if not self.add_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
                         ANS_200[ALERT] = 'Не удалось добавить контакт'
                         send_message(ANS_200, sock)
                         return
@@ -67,7 +68,7 @@ class Server(metaclass=ServerVerifier):
                     send_message(ANS_200, sock)
                     return
                 elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
-                    if not delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
+                    if not self.delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
                         ANS_200[ALERT] = 'Не удалось найти/удалить контакт'
                         send_message(ANS_200, sock)
                         return
@@ -207,6 +208,39 @@ class Server(metaclass=ServerVerifier):
             s.close()
             srv_log.info(f"Сокет закрыт")
 
+    def add_contact(self, username: str, user_contact: str) -> bool:
+        try:
+            user = self.session.query(User).filter_by(username=username)
+            verify_cont = self.session.query(UserContact).filter_by(user_id=user[0].id, contact=user_contact)
+            if verify_cont.count() == 0:
+                contact = self.session.query(User).filter_by(username=user_contact)
+                data = UserContact(user[0].id, contact[0].username)
+                self.session.add(data)
+                self.session.commit()
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(e)
+            return False
+
+    def delete_contact(self, username: str, user_contact: str) -> None:
+        user = self.session.query(User).filter_by(username=username).first()
+        contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact).first()
+        data = UserContact(user.id, contact.username)
+        self.session.add(data)
+        self.session.commit()
+
+    def response_user(self, username: str, ip: str) -> None:
+        result = self.session.query(User).filter_by(username=username)
+        if result.count() == 0:
+            user = User(username, "")
+            self.session.add(user)
+            self.session.commit()
+        user_history = UserHistory(result.first().id, ip)
+        self.session.add(user_history)
+        result[0].online = 1
+        self.session.commit()
 
 def main():
 

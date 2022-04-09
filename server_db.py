@@ -5,9 +5,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
-engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
-if not database_exists(engine.url):
-    create_database(engine.url)
+# engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
+# if not database_exists(engine.url):
+#     create_database(engine.url)
+
+def init_db(path: str, name: str) -> object:
+    engine = create_engine(f'sqlite:///{path}{name}', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
+    if not database_exists(engine.url):
+        create_database(engine.url)
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    # print('init_db session ', session)
+    return session
 
 Base = declarative_base()
 
@@ -66,48 +76,15 @@ def contact_list(name: str) -> list:
     return list_contact
 
 
-def add_contact(username: str, user_contact: str) -> bool:
-    try:
-        user = session.query(User).filter_by(username=username)
-        verify_cont = session.query(UserContact).filter_by(user_id=user[0].id, contact=user_contact)
-        if verify_cont.count() == 0:
-            contact = session.query(User).filter_by(username=user_contact)
-            data = UserContact(user[0].id, contact[0].username)
-            session.add(data)
-            session.commit()
-            return True
-        else:
-            return False
-    except Exception as e:
-        print(e)
-        return False
 
 
-def delete_contact(username: str, user_contact: str) -> None:
-    user = session.query(User).filter_by(username=username).first()
-    contact = session.query(UserContact).filter_by(user_id=user.id, contact=user_contact).first()
-    data = UserContact(user.id, contact.username)
-    session.add(data)
-    session.commit()
 
-
-def response_user(username: str, ip: str) -> None:
-    result = session.query(User).filter_by(username=username)
-    if result.count() == 0:
-        user = User(username, "")
-        session.add(user)
-        session.commit()
-    user_history = UserHistory(result.first().id, ip)
-    session.add(user_history)
-    result[0].online = 1
-    session.commit()
-
-
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-session = Session()
+# Base.metadata.create_all(engine)
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 if __name__ == '__main__':
+    session = init_db('C:/Users/User/PycharmProjects/Client-server/DateBase/', 'serv_db.db3')
     # print(contact_list("1"))
     # print(add_contact(1, 'User5'))
     contact_list(1)
