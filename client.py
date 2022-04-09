@@ -86,9 +86,9 @@ class UserClient(metaclass=ClientVerifier):
 
                 elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[
                     ACCOUNT_NAME]:
-                    item = MessageHistory(input_date[ACCOUNT_NAME],input_date[FROM], input_date[MESSAGE_TEXT])
+                    item = MessageHistory(input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT])
                     session.add(item)
-                    session.comit()
+                    session.commit()
                     return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
                 raise ValueError
             raise TypeError
@@ -154,9 +154,10 @@ class UserClient(metaclass=ClientVerifier):
             message = self.generation_msg(str, name)
             logger.debug('Отправляю сообщение на сервер')
             send_message(message, clientsock)
-            user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
-            session.add(user_msg)
-            session.commit()
+            if message[ACTION] != 'EXIT':
+                user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
+                session.add(user_msg)
+                session.commit()
             if message[ACTION] == 'EXIT':
                 self.socket = None
                 time.sleep(0.7)

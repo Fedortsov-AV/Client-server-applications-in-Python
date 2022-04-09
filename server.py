@@ -4,12 +4,15 @@ import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
+
+
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
+
 from server_db import session, User, response_user, contact_list, add_contact, delete_contact
 import log.server_log_config
 
@@ -44,7 +47,7 @@ class Server(metaclass=ServerVerifier):
                     return
                 elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
                     result = session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
-                    result[0].online = False
+                    result[0].online = 0
                     session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
                     srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
@@ -194,6 +197,7 @@ class Server(metaclass=ServerVerifier):
 
 
 def main():
+
     server = Server()
     server.run_server()
 

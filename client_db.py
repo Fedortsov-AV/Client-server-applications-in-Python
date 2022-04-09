@@ -9,7 +9,7 @@ from sqlalchemy_utils import database_exists, create_database
 from common.variables import USER_NAME
 
 def init_db(name):
-    engine = create_engine(f'sqlite:///DateBase/client_db_{name}.db3', echo=False, pool_recycle=7200, )
+    engine = create_engine(f'sqlite:///DateBase/client_db_{name}.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
     if not database_exists(engine.url):
         create_database(engine.url)
     Base.metadata.drop_all(bind=engine, tables=[UserContact.__table__])

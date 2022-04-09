@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
-engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200)
+engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
 if not database_exists(engine.url):
     create_database(engine.url)
 
@@ -94,13 +94,12 @@ def delete_contact(username: str, user_contact: str) -> None:
 def response_user(username: str, ip: str) -> None:
     result = session.query(User).filter_by(username=username)
     if result.count() == 0:
-        user = User(username, "", )
+        user = User(username, "")
         session.add(user)
         session.commit()
-    result[0].online = 1
-    session.commit()
     user_history = UserHistory(result.first().id, ip)
     session.add(user_history)
+    result[0].online = 1
     session.commit()
 
 
