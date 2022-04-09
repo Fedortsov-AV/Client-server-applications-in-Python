@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QMainWindow, QAction, QApplication, QTableWidget, QT
 from server import Server
 from server_db import User, UserHistory, init_db
 
+
 class MainWindow(QMainWindow):
     path_bd = 'C:/Users/User/PycharmProjects/Client-server/DateBase/'
     file_name_bd = 'serv_db.db3'
@@ -159,7 +160,8 @@ class MainWindow(QMainWindow):
             if name == 'Все пользователи':
                 history = self.session.query(UserHistory).order_by(UserHistory.login_time.desc())
             else:
-                history = self.session.query(UserHistory).filter_by(username=name).order_by(UserHistory.login_time.desc())
+                history = self.session.query(UserHistory).filter_by(username=name).order_by(
+                    UserHistory.login_time.desc())
             self.window2.tableWidget.setRowCount(history.count())
             for item in range(0, history.count()):
                 self.window2.tableWidget.setItem(item, 0, QTableWidgetItem(str(history[item].username)))
@@ -306,7 +308,6 @@ class SettingServer(QtWidgets.QDialog):
         session = init_db(self.lineEdit.text(), self.lineEdit_2.text())
         self.main.new_session()
 
-
     def brows(self):
         path = QtWidgets.QFileDialog.getOpenFileName()[0]
         self.lineEdit_2.setText(path.split('/')[-1])
@@ -357,11 +358,8 @@ class StartServer(QtCore.QObject):
         print(self.serv.session)
 
 
-
-
-
 def main():
-    path_bd = 'C:/Users/User/PycharmProjects/Client-server/DateBase/'
+    path_bd = 'DateBase/'
     file_name_bd = 'serv_db.db3'
     global session
     session = init_db(path_bd, file_name_bd)
