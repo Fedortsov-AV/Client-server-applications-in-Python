@@ -13,7 +13,7 @@ def main():
         if user == 'q':
             break
         elif user == 's':
-            p_list.append(Popen('python serverUI.py', creationflags=CREATE_NEW_CONSOLE))
+            p_list.append(Popen('python serverUI.py'))
             time.sleep(2)
             # for _ in range(count):
             #     p_list.append(Popen('python client.py 127.0.0.1 7777', creationflags=CREATE_NEW_CONSOLE))
