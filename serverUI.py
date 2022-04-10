@@ -347,10 +347,10 @@ class StartServer(QtCore.QObject):
         # print(f'self.serv in init - {self.serv}')
         self.running = True
         self.thread.start()
-        sleep(3)
-        for _ in range(2):
-            Popen('python client.py 127.0.0.1 7777', creationflags=CREATE_NEW_CONSOLE)
-        print(f'Запущено {2} клиента')
+        # sleep(3)
+        # for _ in range(2):
+        #     Popen('python client.py 127.0.0.1 7777', creationflags=CREATE_NEW_CONSOLE)
+        # print(f'Запущено {2} клиента')
 
     def stop_server(self):
         if self.running:
