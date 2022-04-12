@@ -24,9 +24,8 @@ class UserClient(metaclass=ClientVerifier):
     list_contact = []
     flag_socket = False
     session = None
+    socket = None
 
-    # def init_bd_session(self):
-    #     self.session = init_db(self.user_name)
 
 
     @logs
@@ -150,24 +149,21 @@ class UserClient(metaclass=ClientVerifier):
             logger.debug('Разбираю ответ сервера')
             print(self.parsing_msg(data))
 
-    def send_msg(self, clientsock) -> None:
-        while True:
-            name = input('Кому отправить сообщение?\n ')
-            if name == '':
-                logger.error('Получатель не указан')
-            logger.debug('Формирую сообщение пользователя')
-            str = input('Введите сообщение для отправки (для выхода введите \'exit\'): \n')
-            message = self.generation_msg(str, name)
-            logger.debug('Отправляю сообщение на сервер')
-            send_message(message, clientsock)
-            if message[ACTION] != 'EXIT':
-                user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
-                self.session.add(user_msg)
-                self.session.commit()
-            if message[ACTION] == 'EXIT':
-                self.socket = None
-                time.sleep(0.7)
-                break
+    def send_msg(self, text: str, name: str) -> None:
+        # item_message = MessageHistory(self.user_name, name, text)
+        # self.session.add(item_message)
+        # self.session.commit()
+        message = self.generation_msg(text, name)
+        logger.debug('Отправляю сообщение на сервер')
+        send_message(message, self.socket)
+        if message[ACTION] != 'EXIT':
+            user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
+            self.session.add(user_msg)
+            self.session.commit()
+        if message[ACTION] == 'EXIT':
+            self.socket = None
+            time.sleep(0.7)
+
 
     def add_contact(self, contact_name: str) -> None:
         self.msg = {
@@ -202,6 +198,7 @@ class UserClient(metaclass=ClientVerifier):
         # self.parse_port_in_cmd(sys.argv)
         # self.init_bd_session()
         clientsock = self.init_socket()
+        self.socket = clientsock
         self.flag_socket = True
         logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
         self.socket = clientsock

@@ -12,7 +12,7 @@ def init_db(name):
     engine = create_engine(f'sqlite:///DateBase/client_db_{name}.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
     if not database_exists(engine.url):
         create_database(engine.url)
-    Base.metadata.drop_all(bind=engine, tables=[UserContact.__table__])
+    # Base.metadata.drop_all(bind=engine, tables=[UserContact.__table__])
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
