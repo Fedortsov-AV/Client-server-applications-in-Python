@@ -16,7 +16,6 @@ def init_db(name):
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-    print('init_db session ', session)
     return session
 
 Base = declarative_base()
@@ -25,10 +24,11 @@ Base = declarative_base()
 class MessageHistory(Base):
     __tablename__ = 'message_history'
     id = Column(Integer, primary_key=True)
-    msg_to = Column(String(50), nullable=True)
-    msg_from = Column(String(50), nullable=True)
+    msg_to = Column(String(20), nullable=False)
+    msg_from = Column(String(20), nullable=False)
     text_message = Column(Text(255))
     create_time = Column(DateTime(), default=datetime.now())
+    readed = Column(Boolean, default=0)
 
     def __init__(self, msg_to, msg_from, text_message):
         self.msg_to = msg_to
@@ -39,7 +39,7 @@ class MessageHistory(Base):
 class UserContact(Base):
     __tablename__ = 'user_contacts'
     id = Column(Integer(), primary_key=True)
-    contact = Column(String(50))
+    contact = Column(String(20))
     verification = Column(Boolean, default=1)  # для проверки работы default=True, иначе False
 
     def __init__(self, contact):
@@ -49,4 +49,4 @@ class UserContact(Base):
 
 
 if __name__ == '__main__':
-    print(init_db('test'))
+    pass

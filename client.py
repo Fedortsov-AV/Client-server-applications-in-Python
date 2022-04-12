@@ -22,7 +22,12 @@ class UserClient(metaclass=ClientVerifier):
     user_name = USER_NAME
     contact_dict = dict
     list_contact = []
-    socket = None
+    flag_socket = False
+    session = None
+
+    # def init_bd_session(self):
+    #     self.session = init_db(self.user_name)
+
 
     @logs
     def presence_msg(self) -> dict:
@@ -72,11 +77,11 @@ class UserClient(metaclass=ClientVerifier):
                         if input_date[RESPONSE] == 202:
                             for i in input_date[CONTACT]:
                                 self.list_contact.append(i)
-                                result = session.query(UserContact).filter_by(contact=i)
+                                result = self.session.query(UserContact).filter_by(contact=i)
                                 if result.count() == 0:
                                     contact = UserContact(i)
-                                    session.add(contact)
-                                    session.commit()
+                                    self.session.add(contact)
+                                    self.session.commit()
                         return
                 elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
@@ -87,8 +92,8 @@ class UserClient(metaclass=ClientVerifier):
                 elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[
                     ACCOUNT_NAME]:
                     item = MessageHistory(input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT])
-                    session.add(item)
-                    session.commit()
+                    self.session.add(item)
+                    self.session.commit()
                     return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
                 raise ValueError
             raise TypeError
@@ -139,6 +144,7 @@ class UserClient(metaclass=ClientVerifier):
 
     def get_server_msg(self, clientsock: socket) -> None:
         logger.debug('Жду данные от сервера')
+
         while True:
             data = get_message(clientsock)
             logger.debug('Разбираю ответ сервера')
@@ -156,8 +162,8 @@ class UserClient(metaclass=ClientVerifier):
             send_message(message, clientsock)
             if message[ACTION] != 'EXIT':
                 user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
-                session.add(user_msg)
-                session.commit()
+                self.session.add(user_msg)
+                self.session.commit()
             if message[ACTION] == 'EXIT':
                 self.socket = None
                 time.sleep(0.7)
@@ -170,6 +176,7 @@ class UserClient(metaclass=ClientVerifier):
             TIME: time.time(),
             ACCOUNT_NAME: self.user_name,
         }
+
         return send_message(self.msg, self.socket)
 
     def del_contact(self, contact_name: str):
@@ -179,39 +186,53 @@ class UserClient(metaclass=ClientVerifier):
             TIME: time.time(),
             ACCOUNT_NAME: self.user_name,
         }
+        cont = self.session.query(UserContact).filter_by(contact=contact_name)
+        cont.delete()
+        self.session.commit()
         return send_message(self.msg, self.socket)
 
+    def init_socket(self):
+        clientsock = socket(AF_INET, SOCK_STREAM)
+        self.flag_socket = True
+        return clientsock
+
+
     def run_client(self):
-
-        self.parse_addres_in_cmd(sys.argv)
-        self.parse_port_in_cmd(sys.argv)
+        # self.parse_addres_in_cmd(sys.argv)
+        # self.parse_port_in_cmd(sys.argv)
+        # self.init_bd_session()
+        clientsock = self.init_socket()
+        self.flag_socket = True
         logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
-        with socket(AF_INET, SOCK_STREAM) as clientsock:
-            self.socket = clientsock
-            clientsock.connect((self.addres, self.port))
-            clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            pres = self.presence_msg()
-            send_message(pres, clientsock)
-            self.parsing_msg(get_message(clientsock))
-            self.parsing_msg(get_message(clientsock))
-            get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')
-            send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
-            get.start()
-            send.start()
+        self.socket = clientsock
+        clientsock.connect((self.addres, self.port))
+        clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        pres = self.presence_msg()
+        send_message(pres, clientsock)
+        self.parsing_msg(get_message(clientsock))
+        self.parsing_msg(get_message(clientsock))
+        get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')
+        # send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
+        get.start()
+        # send.start()
 
-            while True:
-                time.sleep(1)
-                if get.is_alive() and send.is_alive():
-                    continue
-                break
+        while self.flag_socket:
+            time.sleep(1)
+            if get.is_alive():
+                continue
+
+            clientsock.close()
+            self.flag_socket = False
+            break
+
 
 
 def main():
     client = UserClient()
     client.user_name = input('Введите ваше имя: ')
-    global session
-    session = init_db(client.user_name)
-    print('Main session ', session)
+
+
+    # print('Main session ', session)
 
     client.run_client()
 

@@ -36,6 +36,7 @@ class Server(metaclass=ServerVerifier):
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
+                    ANS_202[ALERT] = "Отправлен список контактов"
                     print(ANS_202[CONTACT])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     send_message(ANS_202, sock)
@@ -61,8 +62,9 @@ class Server(metaclass=ServerVerifier):
                         ANS_200[ALERT] = 'Не удалось добавить контакт'
                         send_message(ANS_200, sock)
                         return
-                    ANS_200[ALERT] = 'Контакт успешно добавлен'
-                    send_message(ANS_200, sock)
+                    ANS_202[ALERT] = 'Контакт успешно добавлен'
+                    ANS_202[CONTACT] = [input_date[CONTACT_NAME]]
+                    send_message(ANS_202, sock)
                     return
                 elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
                     if not self.delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
@@ -189,7 +191,7 @@ class Server(metaclass=ServerVerifier):
                                 srv_log.debug(f'Формирую {send_dict}')
                                 print(self.clients_dict[message[1]])
                                 send_message(send_dict, self.clients_dict[message[1]])
-                                srv_log.info(sys.exc_info()[0])
+                                # srv_log.info(sys.exc_info()[0])
                                 srv_log.debug(f'Отправляю {send_dict}')
                                 self.message_list.remove(message)
 
@@ -213,6 +215,7 @@ class Server(metaclass=ServerVerifier):
                 data = UserContact(user[0].id, contact[0].username)
                 self.session.add(data)
                 self.session.commit()
+
                 return True
             else:
                 return False
@@ -222,10 +225,13 @@ class Server(metaclass=ServerVerifier):
 
     def delete_contact(self, username: str, user_contact: str) -> None:
         user = self.session.query(User).filter_by(username=username).first()
-        contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact).first()
-        data = UserContact(user.id, contact.username)
-        self.session.add(data)
+        contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact)
+        try:
+            contact.delete()
+        except Exception as e:
+            print(e)
         self.session.commit()
+
 
     def response_user(self, username: str, ip: str) -> None:
         result = self.session.query(User).filter_by(username=username)
