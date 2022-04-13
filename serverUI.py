@@ -96,6 +96,8 @@ class MainWindow(QMainWindow):
 
         # Формируем статусбар, тоолбар и меню
         self.status = self.statusBar()
+        self.statuslable = QtWidgets.QLabel()
+        self.status.addWidget(self.statuslable)
         menubar = self.menuBar()
         self.toolbar = self.addToolBar('Запуск сервера')
         self.toolbar.addAction(start_server)
@@ -118,7 +120,7 @@ class MainWindow(QMainWindow):
         self.timer.start()
         self.setGeometry(100, 100, 600, 250)
         self.setWindowTitle('Main window')
-        self.setStatusTip('Сервер остановлен')
+        self.statuslable.setText('Сервер остановлен')
 
     def win2(self):
         if self.window2.isVisible():
@@ -192,7 +194,7 @@ class MainWindow(QMainWindow):
 
     def run_serv(self):
         print(self.server.running)
-        self.setStatusTip('Сервер запущен')
+        self.statuslable.setText('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
             self.server.ADDRES = self.window3.lineEdit_3.text()
@@ -205,7 +207,7 @@ class MainWindow(QMainWindow):
         if self.server.running:
             self.server.running = False
             sleep(1)
-            self.setStatusTip('Сервер остановлен')
+            self.statuslable.setText('Сервер остановлен')
 
     def finish(self):
         print('Сигнал об остановке сервера')
@@ -256,7 +258,7 @@ class SettingServer(QtWidgets.QDialog):
         self.setWindowTitle('Настройки сервера')
 
         self.lineEdit = QtWidgets.QLineEdit()
-        self.lineEdit.setText('C:/Users/User/PycharmProjects/Client-server/DateBase/')
+        self.lineEdit.setText('DateBase/')
         self.lineEdit_2 = QtWidgets.QLineEdit()
         self.lineEdit_2.setText('serv_db.db3')
         self.lineEdit_3 = QtWidgets.QLineEdit()
@@ -269,7 +271,7 @@ class SettingServer(QtWidgets.QDialog):
         self.toolButton.clicked.connect(self.brows)
 
         self.label = QtWidgets.QLabel()
-        self.label.setText("Имя файла БД")
+        self.label.setText("Имя файла> БД")
         self.label_2 = QtWidgets.QLabel()
         self.label_2.setText("Адрес сервера: ")
         self.label_3 = QtWidgets.QLabel()

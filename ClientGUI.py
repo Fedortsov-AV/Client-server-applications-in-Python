@@ -107,12 +107,13 @@ class ContactWindow(QWidget):
         for _ in range(contact.count()):
             contact_name = str(contact[_].contact)
             message = session.query(MessageHistory).filter_by(msg_to=contact[_].contact, readed=0)
-            while True:
-                if len(contact_name) < 20:
-                    contact_name = contact_name + ' '
-                    continue
-                break
-            newitem = f'{contact_name}({message.count()})'
+            # while True:
+            #     if len(contact_name) < 20:
+            #         contact_name = contact_name + ' '
+            #         continue
+            #     break
+
+            newitem = f'{contact_name.ljust(20, " ")}({message.count()})'
             if newitem != self.contacts.item(_).text():
                 self.contacts.item(_).setText(newitem)
                 if message.count() != 0:
