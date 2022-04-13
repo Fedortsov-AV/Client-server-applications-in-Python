@@ -1,7 +1,6 @@
 import sys
-from time import sleep
 
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QApplication
@@ -17,8 +16,8 @@ class AuthWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.contact_window = ContactWindow()
+        self.client = UserClient()
 
-        self.client = Client()
         self.setWindowTitle('Окно авторизации')
 
         self.text = QtWidgets.QLabel()
@@ -42,11 +41,17 @@ class AuthWindow(QWidget):
         global session
         session = init_db(self.name.text())
         if not self.client.running:
-            self.client.name = self.name.text()
-            self.client.initSRV()
+            self.client.user_name = self.name.text()
+            self.client.port = 7777
+            self.client.addres = '127.0.0.1'
+            self.client.session = session
+            self.client.info.connect(self.contact_window.info)
+            self.client.start()
+            # self.client.initSRV()
 
         self.contact_window.username = self.name.text()
         self.contact_window.use_client = self.client
+
         self.contact_window.show_list()
         self.contact_window.show()
         self.hide()
@@ -56,7 +61,7 @@ class ContactWindow(QWidget):
     username = None
     use_client = None
 
-    def __init__(self, ):
+    def __init__(self):
         super().__init__()
         self.add_show = ContactAdd(self)
         # self.add_show.setWindowModality(QtCore.Qt.WindowModal)
@@ -107,11 +112,6 @@ class ContactWindow(QWidget):
         for _ in range(contact.count()):
             contact_name = str(contact[_].contact)
             message = session.query(MessageHistory).filter_by(msg_to=contact[_].contact, readed=0)
-            # while True:
-            #     if len(contact_name) < 20:
-            #         contact_name = contact_name + ' '
-            #         continue
-            #     break
 
             newitem = f'{contact_name.ljust(20, " ")}({message.count()})'
             if newitem != self.contacts.item(_).text():
@@ -139,45 +139,26 @@ class ContactWindow(QWidget):
     def show_add_window(self):
         self.add_show.show()
 
+    def info(self, value):
+        self.wininfo = Info()
+        self.wininfo.show_info(value)
 
-class Client(QtCore.QObject):
-    running = False
-    name = None
+
+class Info(QtWidgets.QDialog):
 
     def __init__(self):
         super().__init__()
-        self.client = UserClient()
-        # Заранее зададим адрес и порт сервера!!!
-        self.client.port = 7777
-        self.client.addres = '127.0.0.1'
+        self.lable = QtWidgets.QLabel()
+        self.okbtn = QtWidgets.QPushButton()
+        self.okbtn.clicked.connect(self.close)
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.lable)
+        self.layout.addWidget(self.okbtn)
+        self.setLayout(self.layout)
 
-        self.thread = QtCore.QThread()
-        self.moveToThread(self.thread)
-        self.thread.started.connect(self.run)
-
-    def initSRV(self):
-        self.running = True
-        self.client.session = session
-        self.client.user_name = self.name
-        self.thread.start()
-
-    def stop(self):
-        if self.running:
-            self.client.flag_socket = False
-            self.running = False
-            sleep(1)
-            self.thread.terminate()
-
-    # метод, для старта клиента в отдельном потоке
-    def run(self):
-        if not self.client.flag_socket:
-            self.client.run_client()
-
-    def add_contact(self, username: str):
-        self.client.add_contact(username)
-
-    def del_contact(self, username: str):
-        self.client.del_contact(username)
+    def show_info(self, text):
+        self.lable.setText(str(text))
+        self.show()
 
 
 class ContactAdd(QtWidgets.QDialog):
@@ -270,7 +251,7 @@ class ChatWindow(QtWidgets.QDialog):
             session.commit()
 
     def send_msg(self):
-        self.main.use_client.client.send_msg(self.message.toPlainText(), self.contact)
+        self.main.use_client.send_msg(self.message.toPlainText(), self.contact)
         self.message.clear()
 
 

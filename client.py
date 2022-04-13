@@ -1,11 +1,12 @@
 import logging
-import logging
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
+
+from PyQt5 import QtCore
 import log.client_log_config
-from client_db import MessageHistory, init_db, UserContact
+from client_db import MessageHistory, UserContact
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT
@@ -15,18 +16,18 @@ from meta import ClientVerifier
 logger = logging.getLogger('client')
 
 
-class UserClient(metaclass=ClientVerifier):
+class UserClient(QtCore.QThread):
+    info = QtCore.pyqtSignal(str)
+    __metaclass__ = ClientVerifier
     msg = {}
     addres = str
     port = int
     user_name = USER_NAME
     contact_dict = dict
     list_contact = []
-    flag_socket = False
+    running = False
     session = None
     socket = None
-
-
 
     @logs
     def presence_msg(self) -> dict:
@@ -77,10 +78,12 @@ class UserClient(metaclass=ClientVerifier):
                             for i in input_date[CONTACT]:
                                 self.list_contact.append(i)
                                 result = self.session.query(UserContact).filter_by(contact=i)
+
                                 if result.count() == 0:
                                     contact = UserContact(i)
                                     self.session.add(contact)
                                     self.session.commit()
+                        self.info.emit(input_date[ALERT])
                         return
                 elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
@@ -141,11 +144,11 @@ class UserClient(metaclass=ClientVerifier):
                 logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен порт {self.port}')
                 return self.port
 
-    def get_server_msg(self, clientsock: socket) -> None:
+    def get_server_msg(self) -> None:
         logger.debug('Жду данные от сервера')
 
         while True:
-            data = get_message(clientsock)
+            data = get_message(self.socket)
             logger.debug('Разбираю ответ сервера')
             print(self.parsing_msg(data))
 
@@ -163,7 +166,6 @@ class UserClient(metaclass=ClientVerifier):
         if message[ACTION] == 'EXIT':
             self.socket = None
             time.sleep(0.7)
-
 
     def add_contact(self, contact_name: str) -> None:
         self.msg = {
@@ -189,45 +191,40 @@ class UserClient(metaclass=ClientVerifier):
 
     def init_socket(self):
         clientsock = socket(AF_INET, SOCK_STREAM)
-        self.flag_socket = True
+        self.running = True
         return clientsock
 
-
-    def run_client(self):
+    def run(self):
         # self.parse_addres_in_cmd(sys.argv)
         # self.parse_port_in_cmd(sys.argv)
         # self.init_bd_session()
-        clientsock = self.init_socket()
-        self.socket = clientsock
-        self.flag_socket = True
+        self.socket = self.init_socket()
+        self.running = True
         logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
-        self.socket = clientsock
-        clientsock.connect((self.addres, self.port))
-        clientsock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+
+        self.socket.connect((self.addres, self.port))
+        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         pres = self.presence_msg()
-        send_message(pres, clientsock)
-        self.parsing_msg(get_message(clientsock))
-        self.parsing_msg(get_message(clientsock))
-        get = Thread(target=self.get_server_msg, args=(clientsock,), daemon=True, name='get')
+        send_message(pres, self.socket)
+        self.parsing_msg(get_message(self.socket))
+        self.parsing_msg(get_message(self.socket))
+        get = Thread(target=self.get_server_msg, daemon=True, name='get')
         # send = Thread(target=self.send_msg, args=(clientsock,), daemon=True, name='send')
         get.start()
         # send.start()
 
-        while self.flag_socket:
+        while self.running:
             time.sleep(1)
             if get.is_alive():
                 continue
 
-            clientsock.close()
-            self.flag_socket = False
+            self.socket.close()
             break
-
 
 
 def main():
     client = UserClient()
     client.user_name = input('Введите ваше имя: ')
-
 
     # print('Main session ', session)
 
