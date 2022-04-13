@@ -2,7 +2,7 @@ import sys
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QApplication
 from sqlalchemy import or_
 
@@ -40,6 +40,10 @@ class AuthWindow(QWidget):
     def show_contact(self):
         global session
         session = init_db(self.name.text())
+        if self.name.text().strip() == '':
+            self.contact_window.info('Имя не может быть пустым!')
+            return
+
         if not self.client.running:
             self.client.user_name = self.name.text()
             self.client.port = 7777
@@ -141,7 +145,7 @@ class ContactWindow(QWidget):
 
     def info(self, value):
         self.wininfo = Info()
-        self.window3.setWindowModality(QtCore.Qt.WindowModal)
+        self.wininfo.setWindowModality(QtCore.Qt.WindowModal)
         self.wininfo.show_info(value)
 
 
@@ -149,16 +153,40 @@ class Info(QtWidgets.QDialog):
 
     def __init__(self):
         super().__init__()
-        self.lable = QtWidgets.QLabel()
-        self.okbtn = QtWidgets.QPushButton()
-        self.okbtn.clicked.connect(self.close)
-        self.layout = QtWidgets.QVBoxLayout()
-        self.layout.addWidget(self.lable)
-        self.layout.addWidget(self.okbtn)
-        self.setLayout(self.layout)
+        self.resize(311, 151)
+        self.groupBox = QtWidgets.QGroupBox(self)
+        self.groupBox.setGeometry(QtCore.QRect(0, 0, 311, 151))
+        self.groupBox.setTitle("")
+        self.lable1 = QtWidgets.QLabel(self.groupBox)
+        self.lable1.setGeometry(QtCore.QRect(20, 40, 71, 61))
+        self.pix = QPixmap('info.jpg')
+        self.lable1.setPixmap(self.pix.scaled(self.lable1.width(), self.lable1.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
+
+
+        self.label = QtWidgets.QLabel(self.groupBox)
+        self.label.setGeometry(QtCore.QRect(110, 40, 171, 61))
+
+        self.pushButton = QtWidgets.QPushButton(self.groupBox)
+        self.pushButton.setGeometry(QtCore.QRect(110, 120, 75, 23))
+        self.pushButton.setText('OK')
+        self.pushButton.clicked.connect(self.close)
+
+
+
+
+
+
+
+        # self.lable = QtWidgets.QLabel()
+        # self.okbtn = QtWidgets.QPushButton()
+        # self.okbtn.clicked.connect(self.close)
+        # self.layout = QtWidgets.QVBoxLayout()
+        # self.layout.addWidget(self.lable)
+        # self.layout.addWidget(self.okbtn)
+        # self.setLayout(self.layout)
 
     def show_info(self, text):
-        self.lable.setText(str(text))
+        self.label.setText(str(text))
         self.show()
 
 

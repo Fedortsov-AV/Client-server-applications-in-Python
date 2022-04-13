@@ -83,7 +83,7 @@ class UserClient(QtCore.QThread):
                                     contact = UserContact(i)
                                     self.session.add(contact)
                                     self.session.commit()
-                        self.info.emit(input_date[ALERT])
+                        self.info.emit("Соединение с сервером установлено")
                         return
                 elif input_date[RESPONSE] in (104, 105) and input_date[ALERT] and input_date[TIME]:
                     if isinstance(input_date[TIME], float):
