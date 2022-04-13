@@ -20,7 +20,10 @@ class MainWindow(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.session = session
-        self.server = StartServer()
+        # self.server = StartServer()
+        self.server = Server()
+        self.server.finish.connect(self.finish)
+
 
         # Формируем окна Активные пользователи и История пользователей
         self.window1 = ListUsers()
@@ -188,19 +191,25 @@ class MainWindow(QMainWindow):
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
     def run_serv(self):
-        # print(self.server.running)
+        print(self.server.running)
         self.setStatusTip('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
-            self.server.address = self.window3.lineEdit_3.text()
-            self.server.port = int(self.window3.lineEdit_4.text())
-            self.server.initSRV()
+            self.server.ADDRES = self.window3.lineEdit_3.text()
+            self.server.PORT = int(self.window3.lineEdit_4.text())
+
+            self.server.start()
+            # self.server.initSRV()
 
     def stop_server(self):
-
         if self.server.running:
+            self.server.running = False
+            sleep(1)
             self.setStatusTip('Сервер остановлен')
-            self.server.stop_server()
+
+    def finish(self):
+        print('Сигнал об остановке сервера')
+
 
     def new_session(self):
         self.session = init_db(self.path_bd, self.file_name_bd)
@@ -330,36 +339,36 @@ class SettingServer(QtWidgets.QDialog):
 
 
 # Класс для создания объекта работающего в другом потоке
-class StartServer(QtCore.QObject):
-    running = False
-    port = None
-    address = None
-    serv = None
-
-    def __init__(self):
-        super().__init__()
-        self.serv = Server()
-        self.thread = QtCore.QThread()
-        self.moveToThread(self.thread)
-        self.thread.started.connect(self.run)
-
-    def initSRV(self):
-        # print(f'self.serv in init - {self.serv}')
-        self.running = True
-        self.thread.start()
-
-
-    def stop_server(self):
-        if self.running:
-            self.serv.flag_socket = False
-            self.running = False
-            sleep(1)
-            self.thread.terminate()
-
-    # метод, для старта сервера в отдельном потоке
-    def run(self):
-        self.serv.session = session
-        self.serv.run_server(self.address, self.port)
+# class StartServer(QtCore.QObject):
+#     running = False
+#     port = None
+#     address = None
+#     serv = None
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.serv = Server()
+#         self.thread = QtCore.QThread()
+#         self.moveToThread(self.thread)
+#         self.thread.started.connect(self.run)
+#
+#     def initSRV(self):
+#         # print(f'self.serv in init - {self.serv}')
+#         self.running = True
+#         self.thread.start()
+#
+#
+#     def stop_server(self):
+#         if self.running:
+#             self.serv.flag_socket = False
+#             self.running = False
+#             sleep(1)
+#             self.thread.terminate()
+#
+#     # метод, для старта сервера в отдельном потоке
+#     def run(self):
+#         self.serv.session = session
+#         self.serv.run_server(self.address, self.port)
 
 
 def main():

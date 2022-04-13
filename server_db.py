@@ -83,7 +83,7 @@ if __name__ == '__main__':
     session = init_db('C:/Users/User/PycharmProjects/Client-server/DateBase/', 'serv_db.db3')
     # print(contact_list("1"))
     # print(add_contact(1, 'User5'))
-    contact_list(1)
+    # contact_list(1)
     # response_user('1', '192.168.1.1')
     # result = session.query(User).filter_by(username='User4')
     # print('rows count: ', result.count())

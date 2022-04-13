@@ -4,6 +4,8 @@ import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
+from PyQt5 import QtCore
+
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
@@ -16,14 +18,16 @@ import log.server_log_config
 srv_log = logging.getLogger('server')
 
 
-class Server(metaclass=ServerVerifier):
+class Server(QtCore.QThread):
+    __metaclass__ = ServerVerifier
+    finish = QtCore.pyqtSignal()
     ADDRES = str
     PORT = SocketPort()
     clients = []
     message_list = []
     clients_dict = dict()
-    flag_socket = False
     session = None
+    running = False
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
@@ -129,22 +133,23 @@ class Server(metaclass=ServerVerifier):
                 return self.PORT
 
     def run_socket(self):
-        if self.flag_socket == False:
+        if self.running == False:
             s = socket(AF_INET, SOCK_STREAM)
-            self.flag_socket = True
+            self.running = True
             return s
 
-    def run_server(self, addres, port):
+    def run(self):
         # self.parse_addres_in_argv(sys.argv)
         # self.parse_port_in_argv(sys.argv)
         with self.run_socket() as s:
             s.settimeout(0.5)
-            srv_log.info(f'Сокет будет привязан к  {(addres, port)}')
-            s.bind((addres, port))
+            srv_log.info(f'Сокет будет привязан к  {(self.ADDRES, self.PORT)}')
+            s.bind((self.ADDRES, self.PORT))
             s.listen(5)
             self.clients = []
             self.message_list = []
-            while self.flag_socket:
+            while self.running:
+                # print(self.running)
                 wait = 0
                 write = []
                 read = []
@@ -194,7 +199,6 @@ class Server(metaclass=ServerVerifier):
                                 # srv_log.info(sys.exc_info()[0])
                                 srv_log.debug(f'Отправляю {send_dict}')
                                 self.message_list.remove(message)
-
                     except Exception as e:
                         srv_log.info(sys.exc_info()[0])
                         # raise
@@ -205,6 +209,10 @@ class Server(metaclass=ServerVerifier):
             srv_log.info(f"Закрываю сокет")
             s.close()
             srv_log.info(f"Сокет закрыт")
+            self.finish.emit()
+
+
+
 
     def add_contact(self, username: str, user_contact: str) -> bool:
         try:
