@@ -94,8 +94,14 @@ class MainWindow(QMainWindow):
 
         # Формируем статусбар, тоолбар и меню
         self.status = self.statusBar()
-        self.statuslable = QtWidgets.QLabel()
-        self.status.addWidget(self.statuslable)
+        self.statuslable1 = QtWidgets.QLabel()
+        self.statuslable2 = QtWidgets.QLabel()
+        self.statuslable3 = QtWidgets.QLabel()
+        # self.statuslaout = QtWidgets.QHBoxLayout()
+        self.status.addPermanentWidget(self.statuslable1)
+        self.status.addPermanentWidget(self.statuslable2)
+        self.status.addPermanentWidget(self.statuslable3)
+        # self.status.setLayout(self.statuslaout)
         menubar = self.menuBar()
         self.toolbar = self.addToolBar('Запуск сервера')
         self.toolbar.addAction(start_server)
@@ -118,7 +124,7 @@ class MainWindow(QMainWindow):
         self.timer.start()
         self.setGeometry(100, 100, 600, 250)
         self.setWindowTitle('Main window')
-        self.statuslable.setText('Сервер остановлен')
+        self.statuslable3.setText('Сервер остановлен')
 
     def win2(self):
         if self.window2.isVisible():
@@ -191,7 +197,7 @@ class MainWindow(QMainWindow):
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
     def run_serv(self):
-        self.statuslable.setText('Сервер запущен')
+        self.statuslable3.setText('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
             self.server.ADDRES = self.window3.lineEdit_3.text()
@@ -204,10 +210,10 @@ class MainWindow(QMainWindow):
         if self.server.running:
             self.server.running = False
             sleep(1)
-            self.statuslable.setText('Сервер остановлен')
+            self.statuslable3.setText('Сервер остановлен')
 
-    def finish(self):
-        print('Сигнал об остановке сервера')
+    def finish(self, value):
+        self.statuslable2.setText(value)
 
     def new_session(self):
         self.session = init_db(self.path_bd, self.file_name_bd)

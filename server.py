@@ -20,7 +20,7 @@ srv_log = logging.getLogger('server')
 
 class Server(QtCore.QThread):
     __metaclass__ = ServerVerifier
-    finish = QtCore.pyqtSignal()
+    finish = QtCore.pyqtSignal(str)
     ADDRES = str
     PORT = SocketPort()
     clients = []
@@ -44,6 +44,7 @@ class Server(QtCore.QThread):
                     print(ANS_202[CONTACT])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     send_message(ANS_202, sock)
+                    self.finish.emit(f'Отправлен список контактов {input_date[USER][ACCOUNT_NAME]}')
                     return
                 elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
@@ -55,6 +56,7 @@ class Server(QtCore.QThread):
                     self.session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
                     srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
+                    self.finish.emit(f'Удалил клиента - {input_date[ACCOUNT_NAME]}')
                     return
                 elif input_date[ACTION] == ALERT and input_date[RESPONSE] in (104, 105):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
@@ -67,6 +69,7 @@ class Server(QtCore.QThread):
                         send_message(ANS_200, sock)
                         return
                     ANS_202[ALERT] = 'Контакт успешно добавлен'
+                    self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]}  для клиента - {input_date[ACCOUNT_NAME]}')
                     ANS_202[CONTACT] = [input_date[CONTACT_NAME]]
                     send_message(ANS_202, sock)
                     return
@@ -174,6 +177,7 @@ class Server(QtCore.QThread):
                         try:
                             data = get_message(s_client)
                             srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
+
                             msg = self.parsing_msg(data, s_client)
                         except Exception as e:
                             self.clients.remove(s_client)
@@ -209,7 +213,7 @@ class Server(QtCore.QThread):
             srv_log.info(f"Закрываю сокет")
             s.close()
             srv_log.info(f"Сокет закрыт")
-            self.finish.emit()
+
 
 
 
