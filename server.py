@@ -72,8 +72,8 @@ class Server(QtCore.QThread):
                     return
                 elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
                     if not self.delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
-                        ANS_200[ALERT] = 'Не удалось найти/удалить контакт'
-                        send_message(ANS_200, sock)
+                        ANS_202[ALERT] = 'Не удалось найти/удалить контакт'
+                        send_message(ANS_202, sock)
                         return
                     ANS_200[ALERT] = 'Контакт успешно удален'
                     send_message(ANS_200, sock)
@@ -231,14 +231,19 @@ class Server(QtCore.QThread):
             print(e)
             return False
 
-    def delete_contact(self, username: str, user_contact: str) -> None:
+    def delete_contact(self, username: str, user_contact: str) -> bool:
         user = self.session.query(User).filter_by(username=username).first()
         contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact)
         try:
-            contact.delete()
+            if contact.count() > 0:
+                contact.delete()
+                self.session.commit()
+                return True
+            return False
         except Exception as e:
             print(e)
-        self.session.commit()
+            return False
+
 
 
     def response_user(self, username: str, ip: str) -> None:

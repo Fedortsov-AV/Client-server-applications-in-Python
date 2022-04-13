@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime
-from subprocess import CREATE_NEW_CONSOLE, Popen
 from time import sleep
 
 from PyQt5 import QtWidgets, QtCore
@@ -23,7 +22,6 @@ class MainWindow(QMainWindow):
         # self.server = StartServer()
         self.server = Server()
         self.server.finish.connect(self.finish)
-
 
         # Формируем окна Активные пользователи и История пользователей
         self.window1 = ListUsers()
@@ -193,7 +191,6 @@ class MainWindow(QMainWindow):
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
     def run_serv(self):
-        print(self.server.running)
         self.statuslable.setText('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
@@ -211,7 +208,6 @@ class MainWindow(QMainWindow):
 
     def finish(self):
         print('Сигнал об остановке сервера')
-
 
     def new_session(self):
         self.session = init_db(self.path_bd, self.file_name_bd)
