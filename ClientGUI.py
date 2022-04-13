@@ -171,20 +171,6 @@ class Info(QtWidgets.QDialog):
         self.pushButton.setText('OK')
         self.pushButton.clicked.connect(self.close)
 
-
-
-
-
-
-
-        # self.lable = QtWidgets.QLabel()
-        # self.okbtn = QtWidgets.QPushButton()
-        # self.okbtn.clicked.connect(self.close)
-        # self.layout = QtWidgets.QVBoxLayout()
-        # self.layout.addWidget(self.lable)
-        # self.layout.addWidget(self.okbtn)
-        # self.setLayout(self.layout)
-
     def show_info(self, text):
         self.label.setText(str(text))
         self.show()
@@ -219,24 +205,7 @@ class ChatWindow(QtWidgets.QDialog):
         self.setWindowTitle(f'Чат с {contact_name}')
 
         self.chat = QtWidgets.QListWidget()
-        messagebox = session.query(MessageHistory).filter(
-            or_(MessageHistory.msg_to == contact_name, MessageHistory.msg_from == contact_name))
-
-        for _ in messagebox.all():
-            _.readed = 1
-        session.commit()
-
-        messagebox.order_by(MessageHistory.create_time)
-
-        for _ in range(messagebox.count()):
-            message = f'{messagebox[_].create_time.strftime("%H:%M:%S")}\n {messagebox[_].text_message}'
-            item = QtWidgets.QListWidgetItem(message)
-            if messagebox[_].msg_to == contact_name:
-                item.setTextAlignment(1)
-                self.chat.addItem(item)
-            else:
-                item.setTextAlignment(2)
-                self.chat.addItem(item)
+        self.chat_history()
 
         self.message = QtWidgets.QPlainTextEdit()
 
@@ -262,6 +231,29 @@ class ChatWindow(QtWidgets.QDialog):
         self.refresh.start()
         self.show()
 
+
+    def chat_history(self):
+        messagebox = session.query(MessageHistory).filter(
+            or_(MessageHistory.msg_to == self.contact, MessageHistory.msg_from == self.contact))
+
+        for _ in messagebox.all():
+            _.readed = 1
+        session.commit()
+
+        messagebox.order_by(MessageHistory.create_time)
+
+        for _ in range(messagebox.count()):
+            message = f'{messagebox[_].create_time.strftime("%H:%M:%S")}\n {messagebox[_].text_message}'
+            item = QtWidgets.QListWidgetItem(message)
+            if messagebox[_].msg_to == self.contact:
+                item.setTextAlignment(1)
+                self.chat.addItem(item)
+            else:
+                item.setTextAlignment(2)
+                self.chat.addItem(item)
+
+
+
     def refresh_chat(self):
         if self.isVisible():
             messagebox = session.query(MessageHistory).filter_by(readed=0)
@@ -280,8 +272,9 @@ class ChatWindow(QtWidgets.QDialog):
             session.commit()
 
     def send_msg(self):
-        self.main.use_client.send_msg(self.message.toPlainText(), self.contact)
-        self.message.clear()
+        if self.message.toPlainText().strip() != '':
+            self.main.use_client.send_msg(self.message.toPlainText(), self.contact)
+            self.message.clear()
 
 
 if __name__ == '__main__':
