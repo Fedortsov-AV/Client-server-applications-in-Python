@@ -19,7 +19,6 @@ class MainWindow(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.session = session
-        # self.server = StartServer()
         self.server = Server()
         self.server.finish.connect(self.finish)
 

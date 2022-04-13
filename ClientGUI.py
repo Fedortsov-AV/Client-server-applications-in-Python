@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QApplication
@@ -141,6 +141,7 @@ class ContactWindow(QWidget):
 
     def info(self, value):
         self.wininfo = Info()
+        self.window3.setWindowModality(QtCore.Qt.WindowModal)
         self.wininfo.show_info(value)
 
 
