@@ -165,6 +165,7 @@ class Info(QtWidgets.QDialog):
 
         self.label = QtWidgets.QLabel(self.groupBox)
         self.label.setGeometry(QtCore.QRect(110, 40, 171, 61))
+        self.label.setWordWrap(True)
 
         self.pushButton = QtWidgets.QPushButton(self.groupBox)
         self.pushButton.setGeometry(QtCore.QRect(110, 120, 75, 23))
