@@ -21,29 +21,34 @@ def init_db(path: str, name: str) -> object:
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-    # print('init_db session ', session)
     return session
 
-# path_bd = 'DateBase/'
-# file_name_bd = 'serv_db.db3'
-# session = init_db(path_bd, file_name_bd)
+
 
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True)
+    submit_str = Column(String, nullable=False)
     info = Column(Text(250), nullable=True)
     created_on = Column(DateTime(), default=datetime.now())
+
+    # значение для проверки в сети пользователь в данный момент или нет
     online = Column(Boolean, default=0)
+
+    # значение возможности блокировки пользователя
+    is_active = Column(Boolean, default=1)
+
     history = relationship('UserHistory', backref='users', uselist=False)
     contacts = relationship('UserContact', backref='users')
 
-    def __init__(self, username, info):
+    def __init__(self, username, submit_str, info):
         self.username = username
+        self.submit_str = submit_str
         self.info = info
 
     def __repr__(self):
-        return f'<User({self.username}, {self.info}, {self.created_on})>'
+        return f'<User({self.username}, {self.submit_str}, {self.info}, {self.created_on})>'
 
 
 class UserHistory(Base):

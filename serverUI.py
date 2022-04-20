@@ -25,10 +25,13 @@ class MainWindow(QMainWindow):
         # Формируем окна Активные пользователи и История пользователей
         self.window1 = ListUsers()
         self.window1.setWindowTitle('Активные пользователи')
-        name = self.session.query(User.username)
+        name = self.session.query(User)
         activ_name = name.filter_by(online=1)
         for item in activ_name.all():
-            self.window1.comboBox.addItem(str(item[0]))
+            item.online = 0
+        self.session.commit()
+        for item in name.all():
+            self.window1.comboBox.addItem(str(item.username))
         self.window1.tableWidget.setColumnCount(4)
         self.window1.tableWidget.setHorizontalHeaderLabels(['ID', 'Имя пользователя', 'IP адрес', 'Время в сети'])
         self.window1.tableWidget.setColumnWidth(0, 50)
@@ -39,7 +42,7 @@ class MainWindow(QMainWindow):
         self.window2 = ListUsers()
         self.window2.setWindowTitle('История пользователей')
         for item in name.all():
-            self.window2.comboBox.addItem(str(item[0]))
+            self.window2.comboBox.addItem(str(item.username))
         self.window2.tableWidget.setColumnCount(3)
         self.window2.tableWidget.setHorizontalHeaderLabels(['Имя пользователя', 'IP адрес', 'Время подключения'])
         self.window2.tableWidget.setColumnWidth(0, 50)

@@ -1,4 +1,6 @@
+import hmac
 import logging
+import os
 import sys
 import time
 from select import select
@@ -8,7 +10,7 @@ from PyQt5 import QtCore
 
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
-    MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
+    MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
@@ -28,6 +30,7 @@ class Server(QtCore.QThread):
     clients_dict = dict()
     session = None
     running = False
+    my_socket = None
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
@@ -35,8 +38,15 @@ class Server(QtCore.QThread):
         try:
             if isinstance(input_date, dict):
                 if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
-                    self.response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0])
-                    ANS_200[ALERT] = "OK"
+                    if not self.response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0], input_date[USER][PASSWORD]):
+                        ANS_200[ALERT] = "Недопустимая пара логин/пароль"
+                        send_message(ANS_200, sock)
+                        self.clients.remove(sock)
+                        print('cjrtn pfrhsn. "Недопустимая пара логин/пароль"')
+                        time.sleep(1)
+                        sock.close()
+                        return
+                    ANS_200[ALERT] = "Вход выполнен"
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
@@ -46,6 +56,11 @@ class Server(QtCore.QThread):
                     send_message(ANS_202, sock)
                     self.finish.emit(f'Отправлен список контактов {input_date[USER][ACCOUNT_NAME]}')
                     return
+                elif input_date[ACTION] == REG:
+                    if self.registration(input_date[USER][ACCOUNT_NAME], input_date[USER][PASSWORD], sock.getpeername()[0]):
+                        ANS_200[ALERT] = "Регистрация успешна"
+                        send_message(ANS_200, sock)
+                        self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                 elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
                     self.message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
@@ -112,11 +127,9 @@ class Server(QtCore.QThread):
 
     @logs
     def parse_port_in_argv(self, arg: list):
-        # srv_log.debug(f'Получен аргумент: {arg}')
         try:
             if isinstance(arg, list):
                 if '-p' in arg:
-                    # self.PORT = 77.7
                     if VALID_PORT.findall(arg[sys.argv.index('-p') + 1]):
                         if VALID_PORT.findall(arg[arg.index('-p') + 1])[0]:
                             self.PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
@@ -137,9 +150,15 @@ class Server(QtCore.QThread):
 
     def run_socket(self):
         if self.running == False:
-            s = socket(AF_INET, SOCK_STREAM)
+            self.my_socket = socket(AF_INET, SOCK_STREAM)
+
             self.running = True
-            return s
+            return self.my_socket
+
+    def client_accept(self):
+        pass
+
+
 
     def run(self):
         # self.parse_addres_in_argv(sys.argv)
@@ -158,10 +177,10 @@ class Server(QtCore.QThread):
                 read = []
                 try:
                     try:
-                        client, addr = s.accept()
+                        client, addr = self.my_socket.accept()
                     except OSError as e:
                         pass
-                        # srv_log.debug(f"Ошибка {e}")
+
                     else:
                         srv_log.info(f"Запрос на соединение от {addr}")
                         self.clients.append(client)
@@ -171,6 +190,7 @@ class Server(QtCore.QThread):
                     srv_log.debug(f'message_list - {self.message_list}')
                 except Exception:
                     pass
+
 
                 if read:
                     for s_client in read:
@@ -250,16 +270,29 @@ class Server(QtCore.QThread):
 
 
 
-    def response_user(self, username: str, ip: str) -> None:
+    def response_user(self, username: str, ip: str, password: str) -> bool:
         result = self.session.query(User).filter_by(username=username)
         if result.count() == 0:
-            user = User(username, "")
-            self.session.add(user)
+            return False
+        if result.first().submit_str == password:
+            user_history = UserHistory(result.first().id, ip, result.first().username)
+            self.session.add(user_history)
+            result.first().online = 1
             self.session.commit()
-        user_history = UserHistory(result.first().id, ip, result.first().username)
-        self.session.add(user_history)
-        result.first().online = 1
-        self.session.commit()
+            return True
+        return False
+
+    def registration(self, username: str, password: str, ip: str) -> bool:
+        result = self.session.query(User).filter_by(username=username)
+        if result.count() == 0:
+            user = User(username, password, '')
+            self.session.add(user)
+            user_history = UserHistory(result.first().id, ip, result.first().username)
+            self.session.add(user_history)
+            result.first().online = 1
+            self.session.commit()
+            return True
+        return False
 
     def contact_list(self, name: str) -> list:
         user = self.session.query(User).filter_by(username=name)

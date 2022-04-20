@@ -11,6 +11,8 @@ ENCODE = 'utf-8'
 ACTION = 'ACTION'
 USER = 'USER'
 RESPONSE = 'RESPONSE'
+AUTH = 'AUTH'
+REG = 'REG'
 ALERT = 'ALERT'
 TIME = 'TIME'
 ACCOUNT_NAME = 'AUTHUSER'
@@ -38,6 +40,7 @@ ANS_202 = {
     CONTACT: list,
     TIME: time.time()
 }
+
 
 
 ANS_400 = {

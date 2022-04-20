@@ -15,16 +15,19 @@ def send_message(msg: dict, sock: socket.socket):
         if isinstance(msg, dict) and isinstance(sock, socket.socket):
             json_msg = json.dumps(msg).encode(ENCODE)
             if isinstance(json_msg, bytes):
-                sock.send(json_msg)
+                if sock:
+                    sock.send(json_msg)
                 return 'Отправка успешна'
             raise TypeError
         raise TypeError
+    except Exception as e:
+        print(e)
     finally:
-        if sys.exc_info()[0] in (TypeError, ValueError):
+        if sys.exc_info()[0] in (TypeError, ValueError) and sock:
             # print('send: ', sys.exc_info()[0])
             return send_message(ANS_105, sock)
 
-        if sys.exc_info()[0] in (ConnectionResetError, OSError):
+        if sys.exc_info()[0] in (ConnectionResetError, OSError) and sock:
             # print('send: ', sys.exc_info()[0])
             return send_message(ANS_104, sock)
 

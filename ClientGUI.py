@@ -1,64 +1,122 @@
 import sys
+import time
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QApplication
+from PyQt5.QtWidgets import QWidget, QApplication, QMessageBox
 from sqlalchemy import or_
 
 from client import UserClient
 from client_db import init_db, UserContact, MessageHistory
+from decorator import verify_edit
 
 
 class AuthWindow(QWidget):
-    # changed_name = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
-        self.contact_window = ContactWindow()
         self.client = UserClient()
+        self.contact_window = ContactWindow()
+        self.contact_window.use_client = self.client
 
         self.setWindowTitle('Окно авторизации')
 
         self.text = QtWidgets.QLabel()
         self.text.setText('Введите ваше имя:')
 
-        self.name = QtWidgets.QLineEdit()
+        self.text1 = QtWidgets.QLabel()
+        self.text1.setText('Введите пароль:')
 
-        self.btm = QtWidgets.QPushButton()
-        self.btm.setText('Войти')
-        self.btm.clicked.connect(self.show_contact)
-        # self.btm.clicked.connect(self.on_changed_name)
+        self.name = QtWidgets.QLineEdit()
+        #
+        self.visibleIcon = QIcon("eye_visible.svg")
+        self.hiddenIcon = QIcon("eye_hidden.svg")
+        self.passworld = QtWidgets.QLineEdit()
+        self.passworld.setEchoMode(QtWidgets.QLineEdit.Password)
+        self.togglepasswordAction = self.passworld.addAction(self.visibleIcon, QtWidgets.QLineEdit.TrailingPosition )
+        self.togglepasswordAction.triggered.connect(self.on_toggle_password_Action)
+        self.passworld.password_shown = False
+
+        self.auth = QtWidgets.QPushButton()
+        self.auth.setText('Войти')
+        self.auth.clicked.connect(self.authentication)
+
+        self.register = QtWidgets.QPushButton()
+        self.register.setText('Зарегистрироваться')
+        self.register.clicked.connect(self.registration)
+
+
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.text)
         self.layout.addWidget(self.name)
+        self.layout.addWidget(self.text1)
+        self.layout.addWidget(self.passworld)
 
-        self.layout.addWidget(self.btm)
+        self.layout.addWidget(self.auth)
+        self.layout.addWidget(self.register)
         self.setLayout(self.layout)
 
-    def show_contact(self):
-        global session
-        session = init_db(self.name.text())
-        if self.name.text().strip() == '':
-            self.contact_window.info('Имя не может быть пустым!')
-            return
+    def on_toggle_password_Action(self):
+        if not self.passworld.password_shown:
+            self.passworld.setEchoMode(QtWidgets.QLineEdit.Normal)
+            self.passworld.password_shown = True
+            self.togglepasswordAction.setIcon(self.hiddenIcon)
+        else:
+            self.passworld.setEchoMode(QtWidgets.QLineEdit.Password)
+            self.passworld.password_shown = False
+            self.togglepasswordAction.setIcon(self.visibleIcon)
 
+    @verify_edit
+    def start_client(self):
         if not self.client.running:
             self.client.user_name = self.name.text()
+            self.client._password = self.passworld.text()
             self.client.port = 7777
             self.client.addres = '127.0.0.1'
-            self.client.session = session
-            self.client.info.connect(self.contact_window.info)
+            self.client.messeg_client.connect(self.mesage_server)
             self.client.start()
-            # self.client.initSRV()
 
-        self.contact_window.username = self.name.text()
-        self.contact_window.use_client = self.client
 
-        self.contact_window.show_list()
-        self.contact_window.show()
-        self.hide()
+    def authentication(self):
+        self.start_client()
+
+        while not self.client.running:
+            time.sleep(0.5)
+        print(f'Клиент запущен')
+        while self.client.get == None:
+            time.sleep(0.5)
+        print(self.client.get)
+        if self.client.running:
+            self.client.authentication()
+
+    def registration(self):
+        self.start_client()
+        while not self.client.running:
+            time.sleep(0.5)
+        print(f'Клиент запущен')
+        if self.client.running:
+            self.client.registration()
+
+    def mesage_server(self, value: str) -> QMessageBox:
+        if value in ["Вход выполнен", "Регистрация успешна"]:
+            global session
+            session = init_db(self.name.text())
+            self.client.session = session
+            self.contact_window.username = self.name.text()
+            self.contact_window.show_list()
+            self.contact_window.show()
+            self.hide()
+            return QMessageBox.information(self, "Предупреждение", value, QMessageBox.Ok)
+
+        return QMessageBox.critical(self, "Предупреждение", value, QMessageBox.Ok)
+
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        print("Написать серверу, что пользователь отключается!")
+        print("Закрываюсь.....")
+        self.client.exit_msg()
 
 
 class ContactWindow(QWidget):
@@ -144,37 +202,40 @@ class ContactWindow(QWidget):
         self.add_show.show()
 
     def info(self, value):
-        self.wininfo = Info()
-        self.wininfo.setWindowModality(QtCore.Qt.WindowModal)
-        self.wininfo.show_info(value)
+        return QMessageBox.information(self, "Предупреждение", value, QMessageBox.Ok)
 
 
-class Info(QtWidgets.QDialog):
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        print("Написать серверу, что пользователь отключается!")
+        print("Закрываюсь.....")
+        self.use_client.exit_msg()
 
-    def __init__(self):
-        super().__init__()
-        self.resize(311, 151)
-        self.groupBox = QtWidgets.QGroupBox(self)
-        self.groupBox.setGeometry(QtCore.QRect(0, 0, 311, 151))
-        self.groupBox.setTitle("")
-        self.lable1 = QtWidgets.QLabel(self.groupBox)
-        self.lable1.setGeometry(QtCore.QRect(20, 40, 71, 61))
-        self.pix = QPixmap('info.jpg')
-        self.lable1.setPixmap(self.pix.scaled(self.lable1.width(), self.lable1.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
-
-
-        self.label = QtWidgets.QLabel(self.groupBox)
-        self.label.setGeometry(QtCore.QRect(110, 40, 171, 61))
-        self.label.setWordWrap(True)
-
-        self.pushButton = QtWidgets.QPushButton(self.groupBox)
-        self.pushButton.setGeometry(QtCore.QRect(110, 120, 75, 23))
-        self.pushButton.setText('OK')
-        self.pushButton.clicked.connect(self.close)
-
-    def show_info(self, text):
-        self.label.setText(str(text))
-        self.show()
+# class Info(QtWidgets.QDialog):
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.resize(311, 151)
+#         self.groupBox = QtWidgets.QGroupBox(self)
+#         self.groupBox.setGeometry(QtCore.QRect(0, 0, 311, 151))
+#         self.groupBox.setTitle("")
+#         self.lable1 = QtWidgets.QLabel(self.groupBox)
+#         self.lable1.setGeometry(QtCore.QRect(20, 40, 71, 61))
+#         self.pix = QPixmap('info.jpg')
+#         self.lable1.setPixmap(self.pix.scaled(self.lable1.width(), self.lable1.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
+#
+#
+#         self.label = QtWidgets.QLabel(self.groupBox)
+#         self.label.setGeometry(QtCore.QRect(110, 40, 171, 61))
+#         self.label.setWordWrap(True)
+#
+#         self.pushButton = QtWidgets.QPushButton(self.groupBox)
+#         self.pushButton.setGeometry(QtCore.QRect(110, 120, 75, 23))
+#         self.pushButton.setText('OK')
+#         self.pushButton.clicked.connect(self.close)
+#
+#     def show_info(self, text):
+#         self.label.setText(str(text))
+#         self.show()
 
 
 class ContactAdd(QtWidgets.QDialog):
