@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime
-from subprocess import CREATE_NEW_CONSOLE, Popen
 from time import sleep
 
 from PyQt5 import QtWidgets, QtCore
@@ -20,7 +19,8 @@ class MainWindow(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.session = session
-        self.server = StartServer()
+        self.server = Server()
+        self.server.finish.connect(self.finish)
 
         # Формируем окна Активные пользователи и История пользователей
         self.window1 = ListUsers()
@@ -93,6 +93,14 @@ class MainWindow(QMainWindow):
 
         # Формируем статусбар, тоолбар и меню
         self.status = self.statusBar()
+        self.statuslable1 = QtWidgets.QLabel()
+        self.statuslable2 = QtWidgets.QLabel()
+        self.statuslable3 = QtWidgets.QLabel()
+        # self.statuslaout = QtWidgets.QHBoxLayout()
+        self.status.addPermanentWidget(self.statuslable1)
+        self.status.addPermanentWidget(self.statuslable2)
+        self.status.addPermanentWidget(self.statuslable3)
+        # self.status.setLayout(self.statuslaout)
         menubar = self.menuBar()
         self.toolbar = self.addToolBar('Запуск сервера')
         self.toolbar.addAction(start_server)
@@ -115,7 +123,7 @@ class MainWindow(QMainWindow):
         self.timer.start()
         self.setGeometry(100, 100, 600, 250)
         self.setWindowTitle('Main window')
-        self.setStatusTip('Сервер остановлен')
+        self.statuslable3.setText('Сервер остановлен')
 
     def win2(self):
         if self.window2.isVisible():
@@ -188,19 +196,23 @@ class MainWindow(QMainWindow):
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
     def run_serv(self):
-        # print(self.server.running)
-        self.setStatusTip('Сервер запущен')
+        self.statuslable3.setText('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
-            self.server.address = self.window3.lineEdit_3.text()
-            self.server.port = int(self.window3.lineEdit_4.text())
-            self.server.initSRV()
+            self.server.ADDRES = self.window3.lineEdit_3.text()
+            self.server.PORT = int(self.window3.lineEdit_4.text())
+
+            self.server.start()
+            # self.server.initSRV()
 
     def stop_server(self):
-        # print(self.server.running)
         if self.server.running:
-            self.setStatusTip('Сервер остановлен')
-            self.server.stop_server()
+            self.server.running = False
+            sleep(1)
+            self.statuslable3.setText('Сервер остановлен')
+
+    def finish(self, value):
+        self.statuslable2.setText(value)
 
     def new_session(self):
         self.session = init_db(self.path_bd, self.file_name_bd)
@@ -247,7 +259,7 @@ class SettingServer(QtWidgets.QDialog):
         self.setWindowTitle('Настройки сервера')
 
         self.lineEdit = QtWidgets.QLineEdit()
-        self.lineEdit.setText('C:/Users/User/PycharmProjects/Client-server/DateBase/')
+        self.lineEdit.setText('DateBase/')
         self.lineEdit_2 = QtWidgets.QLineEdit()
         self.lineEdit_2.setText('serv_db.db3')
         self.lineEdit_3 = QtWidgets.QLineEdit()
@@ -260,7 +272,7 @@ class SettingServer(QtWidgets.QDialog):
         self.toolButton.clicked.connect(self.brows)
 
         self.label = QtWidgets.QLabel()
-        self.label.setText("Имя файла БД")
+        self.label.setText("Имя файла> БД")
         self.label_2 = QtWidgets.QLabel()
         self.label_2.setText("Адрес сервера: ")
         self.label_3 = QtWidgets.QLabel()
@@ -330,39 +342,36 @@ class SettingServer(QtWidgets.QDialog):
 
 
 # Класс для создания объекта работающего в другом потоке
-class StartServer(QtCore.QObject):
-    running = False
-    port = None
-    address = None
-    serv = None
-
-    def __init__(self):
-        super().__init__()
-        self.serv = Server()
-        self.thread = QtCore.QThread()
-        self.moveToThread(self.thread)
-        self.thread.started.connect(self.run)
-
-    def initSRV(self):
-        # print(f'self.serv in init - {self.serv}')
-        self.running = True
-        self.thread.start()
-        # sleep(3)
-        # for _ in range(2):
-        #     Popen('python client.py 127.0.0.1 7777', creationflags=CREATE_NEW_CONSOLE)
-        # print(f'Запущено {2} клиента')
-
-    def stop_server(self):
-        if self.running:
-            self.serv.flag_socket = False
-            self.running = False
-            sleep(1)
-            self.thread.terminate()
-
-    # метод, для старта сервера в отдельном потоке
-    def run(self):
-        self.serv.session = session
-        self.serv.run_server(self.address, self.port)
+# class StartServer(QtCore.QObject):
+#     running = False
+#     port = None
+#     address = None
+#     serv = None
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.serv = Server()
+#         self.thread = QtCore.QThread()
+#         self.moveToThread(self.thread)
+#         self.thread.started.connect(self.run)
+#
+#     def initSRV(self):
+#         # print(f'self.serv in init - {self.serv}')
+#         self.running = True
+#         self.thread.start()
+#
+#
+#     def stop_server(self):
+#         if self.running:
+#             self.serv.flag_socket = False
+#             self.running = False
+#             sleep(1)
+#             self.thread.terminate()
+#
+#     # метод, для старта сервера в отдельном потоке
+#     def run(self):
+#         self.serv.session = session
+#         self.serv.run_server(self.address, self.port)
 
 
 def main():

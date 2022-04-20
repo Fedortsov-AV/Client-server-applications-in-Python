@@ -4,6 +4,8 @@ import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 
+from PyQt5 import QtCore
+
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT
@@ -16,14 +18,16 @@ import log.server_log_config
 srv_log = logging.getLogger('server')
 
 
-class Server(metaclass=ServerVerifier):
+class Server(QtCore.QThread):
+    __metaclass__ = ServerVerifier
+    finish = QtCore.pyqtSignal(str)
     ADDRES = str
     PORT = SocketPort()
     clients = []
     message_list = []
     clients_dict = dict()
-    flag_socket = False
     session = None
+    running = False
 
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
@@ -36,9 +40,11 @@ class Server(metaclass=ServerVerifier):
                     send_message(ANS_200, sock)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
+                    ANS_202[ALERT] = "Отправлен список контактов"
                     print(ANS_202[CONTACT])
                     srv_log.debug(f'Сообщение клиента соответствует требованиям, отвечаю {ANS_200}')
                     send_message(ANS_202, sock)
+                    self.finish.emit(f'Отправлен список контактов {input_date[USER][ACCOUNT_NAME]}')
                     return
                 elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
@@ -50,6 +56,7 @@ class Server(metaclass=ServerVerifier):
                     self.session.commit()
                     self.clients_dict.remove(input_date[ACCOUNT_NAME])
                     srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
+                    self.finish.emit(f'Удалил клиента - {input_date[ACCOUNT_NAME]}')
                     return
                 elif input_date[ACTION] == ALERT and input_date[RESPONSE] in (104, 105):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
@@ -61,13 +68,15 @@ class Server(metaclass=ServerVerifier):
                         ANS_200[ALERT] = 'Не удалось добавить контакт'
                         send_message(ANS_200, sock)
                         return
-                    ANS_200[ALERT] = 'Контакт успешно добавлен'
-                    send_message(ANS_200, sock)
+                    ANS_202[ALERT] = 'Контакт успешно добавлен'
+                    self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]}  для клиента - {input_date[ACCOUNT_NAME]}')
+                    ANS_202[CONTACT] = [input_date[CONTACT_NAME]]
+                    send_message(ANS_202, sock)
                     return
                 elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
                     if not self.delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
-                        ANS_200[ALERT] = 'Не удалось найти/удалить контакт'
-                        send_message(ANS_200, sock)
+                        ANS_202[ALERT] = 'Не удалось найти/удалить контакт'
+                        send_message(ANS_202, sock)
                         return
                     ANS_200[ALERT] = 'Контакт успешно удален'
                     send_message(ANS_200, sock)
@@ -127,22 +136,23 @@ class Server(metaclass=ServerVerifier):
                 return self.PORT
 
     def run_socket(self):
-        if self.flag_socket == False:
+        if self.running == False:
             s = socket(AF_INET, SOCK_STREAM)
-            self.flag_socket = True
+            self.running = True
             return s
 
-    def run_server(self, addres, port):
+    def run(self):
         # self.parse_addres_in_argv(sys.argv)
         # self.parse_port_in_argv(sys.argv)
         with self.run_socket() as s:
             s.settimeout(0.5)
-            srv_log.info(f'Сокет будет привязан к  {(addres, port)}')
-            s.bind((addres, port))
+            srv_log.info(f'Сокет будет привязан к  {(self.ADDRES, self.PORT)}')
+            s.bind((self.ADDRES, self.PORT))
             s.listen(5)
             self.clients = []
             self.message_list = []
-            while self.flag_socket:
+            while self.running:
+                # print(self.running)
                 wait = 0
                 write = []
                 read = []
@@ -167,6 +177,7 @@ class Server(metaclass=ServerVerifier):
                         try:
                             data = get_message(s_client)
                             srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
+
                             msg = self.parsing_msg(data, s_client)
                         except Exception as e:
                             self.clients.remove(s_client)
@@ -189,10 +200,9 @@ class Server(metaclass=ServerVerifier):
                                 srv_log.debug(f'Формирую {send_dict}')
                                 print(self.clients_dict[message[1]])
                                 send_message(send_dict, self.clients_dict[message[1]])
-                                srv_log.info(sys.exc_info()[0])
+                                # srv_log.info(sys.exc_info()[0])
                                 srv_log.debug(f'Отправляю {send_dict}')
                                 self.message_list.remove(message)
-
                     except Exception as e:
                         srv_log.info(sys.exc_info()[0])
                         # raise
@@ -204,6 +214,10 @@ class Server(metaclass=ServerVerifier):
             s.close()
             srv_log.info(f"Сокет закрыт")
 
+
+
+
+
     def add_contact(self, username: str, user_contact: str) -> bool:
         try:
             user = self.session.query(User).filter_by(username=username)
@@ -213,6 +227,7 @@ class Server(metaclass=ServerVerifier):
                 data = UserContact(user[0].id, contact[0].username)
                 self.session.add(data)
                 self.session.commit()
+
                 return True
             else:
                 return False
@@ -220,12 +235,20 @@ class Server(metaclass=ServerVerifier):
             print(e)
             return False
 
-    def delete_contact(self, username: str, user_contact: str) -> None:
+    def delete_contact(self, username: str, user_contact: str) -> bool:
         user = self.session.query(User).filter_by(username=username).first()
-        contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact).first()
-        data = UserContact(user.id, contact.username)
-        self.session.add(data)
-        self.session.commit()
+        contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact)
+        try:
+            if contact.count() > 0:
+                contact.delete()
+                self.session.commit()
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            return False
+
+
 
     def response_user(self, username: str, ip: str) -> None:
         result = self.session.query(User).filter_by(username=username)

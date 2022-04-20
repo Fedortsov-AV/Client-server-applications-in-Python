@@ -36,7 +36,7 @@ class ServerVerifier(type):
 class ClientVerifier(type):
 
     def __new__(cls, clsname, bases, clsdict):
-        code = dis.code_info(clsdict['run_client'])
+        code = dis.code_info(clsdict['init_socket'])
         if code.find('accept') >= 0 or code.find('listen') >= 0:
             raise Exception('Клиент не может вызывать методы listen или accept для сокетов')
         if code.find('SOCK_STREAM') < 0:
