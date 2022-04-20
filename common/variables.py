@@ -17,6 +17,12 @@ ACCOUNT_NAME = 'AUTHUSER'
 PASSWORD = 'PASSWORD'
 MESSAGE_TEXT = 'MESSAGE_TEXT'
 FROM = 'FROM'
+CONTACT_NAME = 'CONTACT_NAME'
+ADD_CONTACT = "ADD_CONTACT"
+DEL_CONTACT = "DEL_CONTACT"
+CONTACT = 'CONTACT'
+USER_NAME = 'guest'
+
 
 ANS_200 = {
     ACTION: ALERT,
@@ -24,6 +30,15 @@ ANS_200 = {
     ALERT: 'ОК',
     TIME: time.time()
 }
+
+ANS_202 = {
+    ACTION: ALERT,
+    RESPONSE: 202,
+    ALERT: 'Список контактов',
+    CONTACT: list,
+    TIME: time.time()
+}
+
 
 ANS_400 = {
     ACTION: ALERT,

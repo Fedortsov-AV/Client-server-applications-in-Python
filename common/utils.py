@@ -31,6 +31,7 @@ def send_message(msg: dict, sock: socket.socket):
 
 @logs
 def get_message(sock: socket.socket):
+    # print(f'get message sock - {sock}')
     data = {}
     try:
         if isinstance(sock, socket.socket):
@@ -44,8 +45,8 @@ def get_message(sock: socket.socket):
     finally:
         if sys.exc_info()[0] in (TypeError, ValueError):
             # print('get: ', sys.exc_info()[0])
-            return get_message(ANS_105, sock)
+            return print(sys.exc_info()[0])
 
         if sys.exc_info()[0] in (ConnectionResetError, OSError):
             # print('get: ', sys.exc_info()[0])
-            return get_message(ANS_104, sock)
+            return print(sys.exc_info()[0])
