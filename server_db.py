@@ -32,19 +32,24 @@ class User(Base):
     submit_str = Column(String, nullable=False)
     info = Column(Text(250), nullable=True)
     created_on = Column(DateTime(), default=datetime.now())
-
     # значение для проверки в сети пользователь в данный момент или нет
     online = Column(Boolean, default=0)
-
     # значение возможности блокировки пользователя
     is_active = Column(Boolean, default=1)
+    # открытый ключ шифрования пользователя
+    open_key_y = Column(Text,  nullable=False)
+    open_key_g = Column(Text,  nullable=False)
+    open_key_p = Column(Text,  nullable=False)
 
     history = relationship('UserHistory', backref='users', uselist=False)
     contacts = relationship('UserContact', backref='users')
 
-    def __init__(self, username, submit_str, info):
+    def __init__(self, username, submit_str, open_key_y, open_key_g, open_key_p, info):
         self.username = username
         self.submit_str = submit_str
+        self.open_key_y = open_key_y
+        self.open_key_g = open_key_g
+        self.open_key_p = open_key_p
         self.info = info
 
     def __repr__(self):
@@ -68,13 +73,19 @@ class UserHistory(Base):
 class UserContact(Base):
     __tablename__ = 'user_contacts'
     id = Column(Integer(), primary_key=True)
-    contact = Column(String(50))
+    contact = Column(String(50), nullable=False)
+    open_key_y = Column(Text, nullable=False)
+    open_key_g = Column(Text, nullable=False)
+    open_key_p = Column(Text, nullable=False)
     verification = Column(Boolean, default=1)  # для проверки работы default=True, иначе False
     user_id = Column(Integer, ForeignKey('users.id'))
 
-    def __init__(self, user_id, contact):
+    def __init__(self, user_id, contact, open_key_y, open_key_g, open_key_p):
         self.contact = contact
         self.user_id = user_id
+        self.open_key_y = open_key_y
+        self.open_key_g = open_key_g
+        self.open_key_p = open_key_p
 
 
 

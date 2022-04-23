@@ -10,7 +10,8 @@ from PyQt5 import QtCore
 
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
-    MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG
+    MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG, \
+    OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY
 from decorator import logs
 from descriptor import SocketPort
 from meta import ServerVerifier
@@ -57,13 +58,24 @@ class Server(QtCore.QThread):
                     self.finish.emit(f'Отправлен список контактов {input_date[USER][ACCOUNT_NAME]}')
                     return
                 elif input_date[ACTION] == REG:
-                    if self.registration(input_date[USER][ACCOUNT_NAME], input_date[USER][PASSWORD], sock.getpeername()[0]):
+                    if self.registration(input_date[USER][ACCOUNT_NAME],
+                                         input_date[USER][PASSWORD],
+                                         input_date[USER][OPEN_KEY_Y],
+                                         input_date[USER][OPEN_KEY_G],
+                                         input_date[USER][OPEN_KEY_P],
+                                         sock.getpeername()[0]):
                         ANS_200[ALERT] = "Регистрация успешна"
                         send_message(ANS_200, sock)
                         self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                 elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
-                    self.message_list.append([input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT]])
+                    self.message_list.append(
+                        [input_date[ACCOUNT_NAME],
+                         input_date[FROM],
+                         input_date[MESSAGE_TEXT],
+                         input_date[SESSION_KEY]
+                         ]
+                    )
                     return
                 elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
                     result = self.session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
@@ -79,14 +91,15 @@ class Server(QtCore.QThread):
                     self.clients.remove(sock)
                     return
                 elif input_date[ACTION] == ADD_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
-                    if not self.add_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
-                        ANS_200[ALERT] = 'Не удалось добавить контакт'
-                        send_message(ANS_200, sock)
-                        return
-                    ANS_202[ALERT] = 'Контакт успешно добавлен'
-                    self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]}  для клиента - {input_date[ACCOUNT_NAME]}')
-                    ANS_202[CONTACT] = [input_date[CONTACT_NAME]]
-                    send_message(ANS_202, sock)
+                    if input_date[CONTACT_NAME] != input_date[ACCOUNT_NAME]:
+                        if not self.add_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
+                            ANS_200[ALERT] = 'Не удалось добавить контакт'
+                            send_message(ANS_200, sock)
+                            return
+                        ANS_202[ALERT] = 'Контакт успешно добавлен'
+                        self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]}  для клиента - {input_date[ACCOUNT_NAME]}')
+                        ANS_202[CONTACT] = self.contact_list(input_date[ACCOUNT_NAME])
+                        send_message(ANS_202, sock)
                     return
                 elif input_date[ACTION] == DEL_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
                     if not self.delete_contact(input_date[ACCOUNT_NAME], input_date[CONTACT_NAME]):
@@ -209,6 +222,9 @@ class Server(QtCore.QThread):
                     try:
 
                         for message in self.message_list:
+                            print(f'self.clients_dict = {self.clients_dict}')
+                            print(f'message[1] = {message[1]}')
+
                             if message[1] in self.clients_dict:
                                 send_dict = {}
                                 send_dict = {
@@ -216,6 +232,7 @@ class Server(QtCore.QThread):
                                     ACCOUNT_NAME: message[0],
                                     FROM: message[1],
                                     MESSAGE_TEXT: message[2],
+                                    SESSION_KEY: message[3]
                                 }
                                 srv_log.debug(f'Формирую {send_dict}')
                                 print(self.clients_dict[message[1]])
@@ -244,7 +261,13 @@ class Server(QtCore.QThread):
             verify_cont = self.session.query(UserContact).filter_by(user_id=user[0].id, contact=user_contact)
             if verify_cont.count() == 0:
                 contact = self.session.query(User).filter_by(username=user_contact)
-                data = UserContact(user[0].id, contact[0].username)
+                data = UserContact(
+                    user[0].id,
+                    contact[0].username,
+                    contact[0].open_key_y,
+                    contact[0].open_key_g,
+                    contact[0].open_key_p
+                )
                 self.session.add(data)
                 self.session.commit()
 
@@ -282,10 +305,10 @@ class Server(QtCore.QThread):
             return True
         return False
 
-    def registration(self, username: str, password: str, ip: str) -> bool:
+    def registration(self, username: str, password: str, open_key_y: int, open_key_g: int, open_key_p: int, ip: str) -> bool:
         result = self.session.query(User).filter_by(username=username)
         if result.count() == 0:
-            user = User(username, password, '')
+            user = User(username, password, open_key_y, open_key_g, open_key_p, '')
             self.session.add(user)
             user_history = UserHistory(result.first().id, ip, result.first().username)
             self.session.add(user_history)
@@ -294,13 +317,16 @@ class Server(QtCore.QThread):
             return True
         return False
 
-    def contact_list(self, name: str) -> list:
+    def contact_list(self, name: str) -> dict:
         user = self.session.query(User).filter_by(username=name)
         list = self.session.query(UserContact).filter_by(user_id=user[0].id)
-        list_contact = []
+        dict_contact = {}
         for set in list.all():
-            list_contact.append(set.contact)
-        return list_contact
+            contact_user = self.session.query(User).filter_by(username=set.contact)
+            dict_contact[contact_user.first().username] = [contact_user.first().open_key_y,
+                                                           contact_user.first().open_key_g,
+                                                           contact_user.first().open_key_p]
+        return dict_contact
 
 
 def main():

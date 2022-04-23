@@ -75,19 +75,22 @@ class AuthWindow(QWidget):
             self.client._password = self.passworld.text()
             self.client.port = 7777
             self.client.addres = '127.0.0.1'
-            self.client.messeg_client.connect(self.mesage_server)
+            self.client.messeg_client.connect(self.message_server)
             self.client.start()
 
 
     def authentication(self):
         self.start_client()
 
-        while not self.client.running:
-            time.sleep(0.5)
-        print(f'Клиент запущен')
-        while self.client.get == None:
-            time.sleep(0.5)
-        print(self.client.get)
+        # while not self.client.running:
+        #     time.sleep(0.5)
+        # print(f'Клиент запущен')
+        # while self.client.get == None:
+        #     time.sleep(0.5)
+        # print(self.client.get)
+        self.contact_window.setWindowTitle(f'Контакты {self.name.text()}')
+        time.sleep(1)
+
         if self.client.running:
             self.client.authentication()
 
@@ -99,12 +102,12 @@ class AuthWindow(QWidget):
         if self.client.running:
             self.client.registration()
 
-    def mesage_server(self, value: str) -> QMessageBox:
+    def message_server(self, value: str) -> QMessageBox:
         if value in ["Вход выполнен", "Регистрация успешна"]:
             global session
             session = init_db(self.name.text())
             self.client.session = session
-            self.contact_window.username = self.name.text()
+
             self.contact_window.show_list()
             self.contact_window.show()
             self.hide()
@@ -114,8 +117,6 @@ class AuthWindow(QWidget):
 
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        print("Написать серверу, что пользователь отключается!")
-        print("Закрываюсь.....")
         self.client.exit_msg()
 
 
@@ -128,7 +129,7 @@ class ContactWindow(QWidget):
         self.add_show = ContactAdd(self)
         # self.add_show.setWindowModality(QtCore.Qt.WindowModal)
 
-        self.setWindowTitle('Контакты')
+        self.setWindowTitle(f'Контакты {self.username}')
         # self.setGeometry(100, 100, 600, 250)
 
         self.contacts = QtWidgets.QListWidget()

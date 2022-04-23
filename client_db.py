@@ -40,10 +40,17 @@ class UserContact(Base):
     __tablename__ = 'user_contacts'
     id = Column(Integer(), primary_key=True)
     contact = Column(String(20))
+    open_key_y = Column(Text)
+    open_key_g = Column(Text)
+    open_key_p = Column(Text)
     verification = Column(Boolean, default=1)  # для проверки работы default=True, иначе False
 
-    def __init__(self, contact):
+
+    def __init__(self, contact, open_key_y, open_key_g, open_key_p):
         self.contact = contact
+        self.open_key_y = open_key_y
+        self.open_key_g = open_key_g
+        self.open_key_p = open_key_p
 
 
 

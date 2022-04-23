@@ -1,6 +1,7 @@
 import binascii
 import hashlib
 import logging
+import random
 import sys
 import time
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
@@ -13,7 +14,8 @@ import log.client_log_config
 from client_db import MessageHistory, UserContact
 from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
-    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT, AUTH, REG
+    ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT, AUTH, REG, \
+    OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY
 from decorator import logs
 from meta import ClientVerifier
 
@@ -30,7 +32,6 @@ class UserClient(QtCore.QThread):
     user_name = USER_NAME
     _password = str
     contact_dict = dict
-    list_contact = []
     running = False
     session = None
     socket = None
@@ -56,12 +57,20 @@ class UserClient(QtCore.QThread):
     @logs
     def generation_msg(self, message: str, name: str) -> dict:
         self.msg = {}
+        contact = self.session.query(UserContact).filter_by(contact=name)
+        encrypt_msg, a =self.encrypt(
+            message,
+            int(contact.first().open_key_p),
+            int(contact.first().open_key_y),
+            int(contact.first().open_key_g),
+        )
 
         self.msg = {
             ACTION: 'MESSAGE',
             TIME: time.time(),
             ACCOUNT_NAME: self.user_name,
-            MESSAGE_TEXT: message,
+            MESSAGE_TEXT: encrypt_msg,
+            SESSION_KEY: a,
             FROM: name,
         }
 
@@ -80,18 +89,26 @@ class UserClient(QtCore.QThread):
                         if input_date[RESPONSE] == 200 and input_date[ALERT] == "Недопустимая пара логин/пароль":
                             self.running = False
                             return self.messeg_client.emit(input_date[ALERT])
-                        elif input_date[RESPONSE] == 200 and input_date[ALERT] in ["Вход выполнен", "Регистрация успешна"]:
+                        elif input_date[RESPONSE] == 200 and input_date[ALERT] in ["Вход выполнен", "Регистрация успешна", 'Контакт успешно добавлен', 'Не удалось добавить контакт']:
+                            if input_date[ALERT] == "Вход выполнен":
+                                with open(f"common/secret_key_{self.user_name}", "r") as f:
+                                    self.key = int(f.readline())
+                                    self.y = int(f.readline())
+                                    self.g = int(f.readline())
+                                    self.p = int(f.readline())
                             return self.messeg_client.emit(input_date[ALERT])
 
                         elif input_date[RESPONSE] == 202:
                             while not self.session:
                                 time.sleep(0.5)
                             for i in input_date[CONTACT]:
-                                self.list_contact.append(i)
                                 result = self.session.query(UserContact).filter_by(contact=i)
-
                                 if result.count() == 0:
-                                    contact = UserContact(i)
+                                    contact = UserContact(i,
+                                                          str(input_date[CONTACT][i][0]),
+                                                          str(input_date[CONTACT][i][1]),
+                                                          str(input_date[CONTACT][i][2])
+                                                          )
                                     self.session.add(contact)
                                     self.session.commit()
                         self.info.emit("Соединение с сервером установлено")
@@ -104,10 +121,13 @@ class UserClient(QtCore.QThread):
 
                 elif input_date[RESPONSE] == 'message' and input_date[FROM] and input_date[MESSAGE_TEXT] and input_date[
                     ACCOUNT_NAME]:
-                    item = MessageHistory(input_date[ACCOUNT_NAME], input_date[FROM], input_date[MESSAGE_TEXT])
+                    print(input_date)
+                    text = self.decrypt(input_date[MESSAGE_TEXT], int(input_date[SESSION_KEY]), self.key, self.p)
+
+                    item = MessageHistory(input_date[ACCOUNT_NAME], input_date[FROM], text)
                     self.session.add(item)
                     self.session.commit()
-                    return f"{input_date[ACCOUNT_NAME]} написал: {input_date[MESSAGE_TEXT]}"
+                    return f"{input_date[ACCOUNT_NAME]} написал: {text}"
                 raise ValueError
             raise TypeError
         finally:
@@ -170,7 +190,7 @@ class UserClient(QtCore.QThread):
         message = self.generation_msg(text, name)
         logger.debug('Отправляю сообщение на сервер')
         send_message(message, self.socket)
-        user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], message[MESSAGE_TEXT])
+        user_msg = MessageHistory(message[ACCOUNT_NAME], message[FROM], text)
         self.session.add(user_msg)
         self.session.commit()
 
@@ -227,10 +247,10 @@ class UserClient(QtCore.QThread):
 
     def registration(self):
         """
-        Метод формирует и отправляет сообщение на
+        Метод создает ключи шифрования, формирует и отправляет сообщение на
         сервер о необходимости зарегистрировать пользователя
-
         """
+        self.generator_asinc_key()
         self.msg = {}
         dk = hashlib.pbkdf2_hmac('sha256', self._password.encode('UTF-8'), b'UserClient', 100000)
         print(binascii.hexlify(dk))
@@ -239,7 +259,10 @@ class UserClient(QtCore.QThread):
             TIME: time.time(),
             USER: {
                 ACCOUNT_NAME: self.user_name,
-                PASSWORD: binascii.hexlify(dk).decode('UTF-8')
+                PASSWORD: binascii.hexlify(dk).decode('UTF-8'),
+                OPEN_KEY_Y: self.y.__str__(),
+                OPEN_KEY_G: self.g.__str__(),
+                OPEN_KEY_P: self.p.__str__()
             }
         }
         try:
@@ -247,43 +270,155 @@ class UserClient(QtCore.QThread):
         except Exception as e:
             print(f'registration - {e}')
 
-
-
-
-
-
-
-
-
     def run(self):
         self.socket = self.init_socket()
-        print(f'self.socket in run- {self.socket}')
         self.running = True
         try:
             logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
             self.socket.connect((self.addres, self.port))
             self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            # pres = self.presence_msg()
-            # send_message(pres, self.socket)
-            # self.parsing_msg(get_message(self.socket))
-            # self.parsing_msg(get_message(self.socket))
 
-        except Exception as e:
-            print(f'client - {e}')
+        except ConnectionRefusedError:
             self.running = False
             self.socket.close()
+            self.messeg_client.emit(str(sys.exc_info()[1]))
 
-        self.get = Thread(target=self.get_server_msg, daemon=False, name='get')
-        self.get.start()
+        else:
+            self.get = Thread(target=self.get_server_msg, daemon=False, name='get')
+            self.get.start()
 
 
-        while self.running:
-            time.sleep(1)
-            if self.get.is_alive():
-                continue
-            break
-        print('Закрываю сокет')
-        self.socket.close()
+            while self.running:
+                time.sleep(1)
+                if self.get.is_alive():
+                    continue
+                break
+            print('Закрываю сокет')
+            self.socket.close()
+
+    def gsd(self, a, b):
+        if a < b:
+            return self.gsd(b, a)
+        elif a % b == 0:
+            return b
+        else:
+            return self.gsd(b, a % b)
+
+    def generation_key(self, q):
+
+        key = random.randint(pow(10, 20), q)
+
+        while self.gsd(q, key) != 1:
+            key = random.randint(pow(10, 20), q)
+
+        return key
+
+    def power(self, a, b, c):
+        x = 1
+        y = a
+
+        while b > 0:
+            if b % 2 == 0:
+                x = (x * y) % c
+            y = (y * y) % c
+            b = int(b / 2)
+
+        return x % c
+
+    def encrypt(self, msg: str, p: int, y: int, g: int) -> list and int:
+        """
+        Для шифрования каждого отдельного блока исходного сообщения должно выбираться случайное число k (1 < k < p – 1).
+        После чего шифрограмма генерируется по следующим формулам
+        a = g^k mod p,
+        b = (y^k*Т) mod p,
+        где Т – исходное сообщение;
+        (a, b) – зашифрованное сообщение.
+        :param msg:
+        :param q:
+        :param h:
+        :param g:
+        :return:
+        """
+
+
+        k = self.generation_key(p)
+        s = self.power(y, k, p)
+        # Блок "p" отдать пользователю вместе с зашифрованным сообщением!
+        a = self.power(g, k, p)
+        en_msg = [ord(_) * s for _ in msg]
+
+        return en_msg, a
+
+    def decrypt(self, en_msg: list, a: int, key: int, p: int) -> str:
+        """
+        Дешифрование сообщения выполняется по следующей формуле
+        T = (b (a^x)^-1) mod p
+        или
+        T = (b*a^(p-1-x)) mod p,
+        где (a^x)^-1 – обратное значение числа a^x по модулю p.
+        :param en_msg:
+        :param p:
+        :param key:
+        :param q:
+        :return:
+        """
+        dr_msg = ''
+        h = self.power(a, key, p)
+
+        for _ in en_msg:
+            dr_msg = dr_msg + chr(int(_ / h))
+        return dr_msg
+
+
+
+    def generator_asinc_key(self):
+        """
+        1	Выбирается простое число p.
+        2	Выбирается число g (0 < g < p), являющееся первообразным корнем по модулю p*)
+        3	Выбирается закрытый ключ x (дискретный логарифм) - произвольное натуральное число (0 < x < p)
+        4	Вычисляется y = g^x mod p.
+        Открытый ключ (y, g, p) - отправляется серверу для привязки к пользователю
+        self.key  - Приватный ключ, остается только у пользователя
+        """
+
+        self.p = random.randint(pow(10, 20), pow(10, 50))
+
+        # генерация приватного ключа (X)
+        self.key = self.generation_key(self.p)  # Privat key
+
+        # второй блок открытого ключа
+        self.g = random.randint(2, self.p)
+
+
+        # первый блок открытого ключа
+        self.y = self.power(self.g, self.key, self.p)
+
+
+        # Открытый ключ (y, g, p)
+        self.open_key = (self.y, self.g, self.p)
+
+        # Записываем в файл для данного пользователя оба ключа
+        with open(f"common/secret_key_{self.user_name}", "w") as f:
+            # В первую строку записываем секретный ключ
+            f.writelines(f"{self.key}\n")
+            # Во вторую строку записываем первый блок открытого ключа
+            f.writelines(f"{self.open_key[0]}\n")
+            # В третию строку записываем второй блок открытого ключа
+            f.writelines(f"{self.open_key[1]}\n")
+            # В четвертую строку записываем третий блок открытого ключа
+            f.writelines(f"{self.open_key[2]}\n")
+        encrypt_msg, a = self.encrypt('Тест шифровки', self.p, self.y, self.g)
+
+        print(f'Тест шифровки = {encrypt_msg}')
+
+        decript_msg = self.decrypt(encrypt_msg, a, self.key, self.p)
+
+        print(f'Тест расшифровки = {decript_msg}')
+
+
+
+
+
 
 
 
@@ -291,11 +426,12 @@ class UserClient(QtCore.QThread):
 
 def main():
     client = UserClient()
-    client.user_name = input('Введите ваше имя: ')
-
-    # print('Main session ', session)
-
-    client.run_client()
+    client.generator_asinc_key()
+    # client.user_name = input('Введите ваше имя: ')
+    #
+    # # print('Main session ', session)
+    #
+    # client.run_client()
 
 
 if __name__ == '__main__':
