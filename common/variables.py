@@ -1,3 +1,5 @@
+"""В данном модуле храниятся константы и дефолтные значения"""
+
 import re
 import time
 
@@ -9,10 +11,14 @@ VALID_PORT = re.compile(r'^\d{4,5}$')
 ENCODE = 'utf-8'
 
 ACTION = 'ACTION'
+PRESENCE = 'PRESENCE'
+
 USER = 'USER'
 RESPONSE = 'RESPONSE'
+MESSAGE = 'MESSAGE'
 AUTH = 'AUTH'
 REG = 'REG'
+EXIT = 'EXIT'
 ALERT = 'ALERT'
 TIME = 'TIME'
 ACCOUNT_NAME = 'AUTHUSER'
@@ -29,7 +35,6 @@ DEL_CONTACT = "DEL_CONTACT"
 CONTACT = 'CONTACT'
 USER_NAME = 'guest'
 
-
 ANS_200 = {
     ACTION: ALERT,
     RESPONSE: 200,
@@ -44,8 +49,6 @@ ANS_202 = {
     CONTACT: list,
     TIME: time.time()
 }
-
-
 
 ANS_400 = {
     ACTION: ALERT,
@@ -67,3 +70,6 @@ ANS_105 = {
     ALERT: 'Ошибка отправки',
     TIME: time.time()
 }
+
+if __name__ == '__main__':
+    pass

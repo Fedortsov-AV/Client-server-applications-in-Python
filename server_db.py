@@ -1,3 +1,5 @@
+"""В данном модуле формируется БД сервера"""
+
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, create_engine
@@ -5,15 +7,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
-
-# engine = create_engine('sqlite:///DateBase/serv_db.db3', echo=False, pool_recycle=7200, connect_args={'check_same_thread': False})
-# if not database_exists(engine.url):
-#     create_database(engine.url)
-
-
 Base = declarative_base()
 
+
 def init_db(path: str, name: str) -> object:
+    """Функция инициализирующая БД сервера"""
+
     engine = create_engine(f'sqlite:///{path}{name}', echo=False, pool_recycle=7200,
                            connect_args={'check_same_thread': False})
     if not database_exists(engine.url):
@@ -24,8 +23,9 @@ def init_db(path: str, name: str) -> object:
     return session
 
 
-
 class User(Base):
+    """Класс создающий таблицу 'users'"""
+
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True)
@@ -37,9 +37,9 @@ class User(Base):
     # значение возможности блокировки пользователя
     is_active = Column(Boolean, default=1)
     # открытый ключ шифрования пользователя
-    open_key_y = Column(Text,  nullable=False)
-    open_key_g = Column(Text,  nullable=False)
-    open_key_p = Column(Text,  nullable=False)
+    open_key_y = Column(Text, nullable=False)
+    open_key_g = Column(Text, nullable=False)
+    open_key_p = Column(Text, nullable=False)
 
     history = relationship('UserHistory', backref='users', uselist=False)
     contacts = relationship('UserContact', backref='users')
@@ -57,6 +57,8 @@ class User(Base):
 
 
 class UserHistory(Base):
+    """Класс создающий таблицу 'user_history'"""
+
     __tablename__ = 'user_history'
     id = Column(Integer(), primary_key=True)
     login_time = Column(DateTime(), default=datetime.now())
@@ -71,6 +73,8 @@ class UserHistory(Base):
 
 
 class UserContact(Base):
+    """Класс создающий таблицу 'user_contacts'"""
+
     __tablename__ = 'user_contacts'
     id = Column(Integer(), primary_key=True)
     contact = Column(String(50), nullable=False)
@@ -87,13 +91,6 @@ class UserContact(Base):
         self.open_key_g = open_key_g
         self.open_key_p = open_key_p
 
-
-
-
-
-# Base.metadata.create_all(engine)
-# Session = sessionmaker(bind=engine)
-# session = Session()
 
 if __name__ == '__main__':
     session = init_db('C:/Users/User/PycharmProjects/Client-server/DateBase/', 'serv_db.db3')

@@ -1,4 +1,8 @@
+"""Модуль содержит дескрипторы"""
+
+
 class SocketPort:
+    """Дескриптор для проверки номера порта"""
 
     def __set__(self, instance, value):
         if value < 0:

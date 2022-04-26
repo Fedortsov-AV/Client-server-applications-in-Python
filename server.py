@@ -11,8 +11,8 @@ from PyQt5 import QtCore
 from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG, \
-    OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY
-from decorator import logs
+    OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
+from decorator import logs, login_required
 from descriptor import SocketPort
 from meta import ServerVerifier
 from server_db import User, UserContact, UserHistory
@@ -22,28 +22,35 @@ srv_log = logging.getLogger('server')
 
 
 class Server(QtCore.QThread):
+    """Класс сервера, запускает отдельный поток для обработки поступающих сообщений"""
+
     __metaclass__ = ServerVerifier
     finish = QtCore.pyqtSignal(str)
-    ADDRES = str
-    PORT = SocketPort()
-    clients = []
-    message_list = []
-    clients_dict = dict()
+    ADDRES: str = ''
+    PORT: int = SocketPort()
+    clients: list = []
+    message_list: list = []
+    clients_dict: dict = {}
     session = None
-    running = False
-    my_socket = None
+    running: bool = False
+    my_socket: socket = None
 
+    @login_required
     @logs
     def parsing_msg(self, input_date: dict, sock: socket) -> None:
+        """Метод парсинга поступающих сообщений"""
+
         srv_log.info(f'Получен аргумент: {input_date}')
         try:
             if isinstance(input_date, dict):
-                if input_date[ACTION] == 'presence' and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
-                    if not self.response_user(input_date[USER][ACCOUNT_NAME], sock.getpeername()[0], input_date[USER][PASSWORD]):
+                if input_date[ACTION] == PRESENCE and input_date[USER][ACCOUNT_NAME] != '' and input_date[TIME]:
+                    if not self.response_user(input_date[USER][ACCOUNT_NAME],
+                                              sock.getpeername()[0],
+                                              input_date[USER][PASSWORD]):
                         ANS_200[ALERT] = "Недопустимая пара логин/пароль"
                         send_message(ANS_200, sock)
                         self.clients.remove(sock)
-                        print('cjrtn pfrhsn. "Недопустимая пара логин/пароль"')
+                        print("Недопустимая пара логин/пароль")
                         time.sleep(1)
                         sock.close()
                         return
@@ -67,17 +74,17 @@ class Server(QtCore.QThread):
                         ANS_200[ALERT] = "Регистрация успешна"
                         send_message(ANS_200, sock)
                         self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
-                elif input_date[ACTION] == 'MESSAGE' and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
+                elif input_date[ACTION] == MESSAGE and input_date[ACCOUNT_NAME] and input_date[MESSAGE_TEXT] \
                         and input_date[FROM] != '':
                     self.message_list.append(
                         [input_date[ACCOUNT_NAME],
                          input_date[FROM],
                          input_date[MESSAGE_TEXT],
-                         input_date[SESSION_KEY]
+                         input_date[SESSION_KEY],
                          ]
                     )
                     return
-                elif input_date[ACTION] == 'EXIT' and input_date[ACCOUNT_NAME]:
+                elif input_date[ACTION] == EXIT and input_date[ACCOUNT_NAME]:
                     result = self.session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
                     result.first().online = 0
                     self.session.commit()
@@ -115,10 +122,13 @@ class Server(QtCore.QThread):
         finally:
             if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
                 srv_log.critical(f'Произошла ошибка: {sys.exc_info()[0]}')
-                return send_message(ANS_400, sock)
+                send_message(ANS_400, sock)
+                return
 
     @logs
     def parse_addres_in_argv(self, arg: list):
+        """Метод парсинга ip-адреса из командной строки"""
+
         # srv_log.debug(f'Получен аргумент: {arg}')
         try:
             if isinstance(arg, list):
@@ -140,6 +150,8 @@ class Server(QtCore.QThread):
 
     @logs
     def parse_port_in_argv(self, arg: list):
+        """Метод парсинга номера порта из командной строки"""
+
         try:
             if isinstance(arg, list):
                 if '-p' in arg:
@@ -162,18 +174,17 @@ class Server(QtCore.QThread):
                 return self.PORT
 
     def run_socket(self):
-        if self.running == False:
-            self.my_socket = socket(AF_INET, SOCK_STREAM)
+        """Метод инициализации сокета"""
 
+        if not self.running:
+            self.my_socket = socket(AF_INET, SOCK_STREAM)
             self.running = True
             return self.my_socket
 
-    def client_accept(self):
-        pass
-
-
-
     def run(self):
+        """Основной метод запуска потока, делает привязку созданного сокета и с помощью select
+        постоянно прослушивает всех подключенных пользователей"""
+
         # self.parse_addres_in_argv(sys.argv)
         # self.parse_port_in_argv(sys.argv)
         with self.run_socket() as s:
@@ -191,8 +202,9 @@ class Server(QtCore.QThread):
                 try:
                     try:
                         client, addr = self.my_socket.accept()
-                    except OSError as e:
+                    except Exception as e:
                         pass
+                        # print(f'Exeption {e} in acept')
 
                     else:
                         srv_log.info(f"Запрос на соединение от {addr}")
@@ -201,17 +213,15 @@ class Server(QtCore.QThread):
                     srv_log.debug(f'Write - {len(write)}')
                     srv_log.debug(f'Read - {len(read)}')
                     srv_log.debug(f'message_list - {self.message_list}')
-                except Exception:
-                    pass
-
+                except Exception as e:
+                    print(f'Exeption {e} in select')
 
                 if read:
                     for s_client in read:
                         try:
                             data = get_message(s_client)
                             srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
-
-                            msg = self.parsing_msg(data, s_client)
+                            self.parsing_msg(data, s_client)
                         except Exception as e:
                             self.clients.remove(s_client)
                             srv_log.debug(f'Ошибка при получении - {sys.exc_info()[0]}')
@@ -228,7 +238,7 @@ class Server(QtCore.QThread):
                             if message[1] in self.clients_dict:
                                 send_dict = {}
                                 send_dict = {
-                                    RESPONSE: 'message',
+                                    RESPONSE: MESSAGE,
                                     ACCOUNT_NAME: message[0],
                                     FROM: message[1],
                                     MESSAGE_TEXT: message[2],
@@ -237,25 +247,21 @@ class Server(QtCore.QThread):
                                 srv_log.debug(f'Формирую {send_dict}')
                                 print(self.clients_dict[message[1]])
                                 send_message(send_dict, self.clients_dict[message[1]])
-                                # srv_log.info(sys.exc_info()[0])
                                 srv_log.debug(f'Отправляю {send_dict}')
                                 self.message_list.remove(message)
                     except Exception as e:
                         srv_log.info(sys.exc_info()[0])
-                        # raise
                         self.clients.remove(s_client)
                         del self.clients_dict[message[0]]
                         srv_log.debug(f"Удалил клиента - {s_client}")
-            # print('Закрываю сокет')
+
             srv_log.info(f"Закрываю сокет")
             s.close()
             srv_log.info(f"Сокет закрыт")
 
-
-
-
-
     def add_contact(self, username: str, user_contact: str) -> bool:
+        """Метод добавления контакта пользователю"""
+
         try:
             user = self.session.query(User).filter_by(username=username)
             verify_cont = self.session.query(UserContact).filter_by(user_id=user[0].id, contact=user_contact)
@@ -279,6 +285,8 @@ class Server(QtCore.QThread):
             return False
 
     def delete_contact(self, username: str, user_contact: str) -> bool:
+        """Метод удаления контакта пользователя"""
+
         user = self.session.query(User).filter_by(username=username).first()
         contact = self.session.query(UserContact).filter_by(user_id=user.id, contact=user_contact)
         try:
@@ -291,9 +299,9 @@ class Server(QtCore.QThread):
             print(e)
             return False
 
-
-
     def response_user(self, username: str, ip: str, password: str) -> bool:
+        """Метод авторизации пользователя"""
+
         result = self.session.query(User).filter_by(username=username)
         if result.count() == 0:
             return False
@@ -306,6 +314,8 @@ class Server(QtCore.QThread):
         return False
 
     def registration(self, username: str, password: str, open_key_y: int, open_key_g: int, open_key_p: int, ip: str) -> bool:
+        """Метод регистрации пользователя"""
+
         result = self.session.query(User).filter_by(username=username)
         if result.count() == 0:
             user = User(username, password, open_key_y, open_key_g, open_key_p, '')
@@ -318,6 +328,8 @@ class Server(QtCore.QThread):
         return False
 
     def contact_list(self, name: str) -> dict:
+        """Метод формирующий список контактов пользователя"""
+
         user = self.session.query(User).filter_by(username=name)
         list = self.session.query(UserContact).filter_by(user_id=user[0].id)
         dict_contact = {}

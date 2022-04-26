@@ -1,9 +1,12 @@
+"""Основной модуль клиента. В нем создается графический интерфейс, а так же
+происходит создание экземпляра UserClient и его запуск"""
+
 import sys
 import time
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QApplication, QMessageBox
 from sqlalchemy import or_
 
@@ -13,6 +16,7 @@ from decorator import verify_edit
 
 
 class AuthWindow(QWidget):
+    """ Класс создающий окно авторизации"""
 
     def __init__(self):
         super().__init__()
@@ -29,13 +33,13 @@ class AuthWindow(QWidget):
         self.text1.setText('Введите пароль:')
 
         self.name = QtWidgets.QLineEdit()
-        #
-        self.visibleIcon = QIcon("eye_visible.svg")
-        self.hiddenIcon = QIcon("eye_hidden.svg")
+
+        self.visibleIcon = QIcon("static/eye_visible.svg")
+        self.hiddenIcon = QIcon("static/eye_hidden.svg")
         self.passworld = QtWidgets.QLineEdit()
         self.passworld.setEchoMode(QtWidgets.QLineEdit.Password)
-        self.togglepasswordAction = self.passworld.addAction(self.visibleIcon, QtWidgets.QLineEdit.TrailingPosition )
-        self.togglepasswordAction.triggered.connect(self.on_toggle_password_Action)
+        self.togglepasswordAction = self.passworld.addAction(self.visibleIcon, QtWidgets.QLineEdit.TrailingPosition)
+        self.togglepasswordAction.triggered.connect(self.on_toggle_password_action)
         self.passworld.password_shown = False
 
         self.auth = QtWidgets.QPushButton()
@@ -45,8 +49,6 @@ class AuthWindow(QWidget):
         self.register = QtWidgets.QPushButton()
         self.register.setText('Зарегистрироваться')
         self.register.clicked.connect(self.registration)
-
-
 
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.text)
@@ -58,7 +60,9 @@ class AuthWindow(QWidget):
         self.layout.addWidget(self.register)
         self.setLayout(self.layout)
 
-    def on_toggle_password_Action(self):
+    def on_toggle_password_action(self):
+        """Метод позволяющий отобразить вводимый пароль в окне авторизации"""
+
         if not self.passworld.password_shown:
             self.passworld.setEchoMode(QtWidgets.QLineEdit.Normal)
             self.passworld.password_shown = True
@@ -70,6 +74,8 @@ class AuthWindow(QWidget):
 
     @verify_edit
     def start_client(self):
+        """Метод запускающий поток UserClient()"""
+
         if not self.client.running:
             self.client.user_name = self.name.text()
             self.client._password = self.passworld.text()
@@ -78,16 +84,10 @@ class AuthWindow(QWidget):
             self.client.messeg_client.connect(self.message_server)
             self.client.start()
 
-
     def authentication(self):
-        self.start_client()
+        """Метод проводящий аутендификацию пользователя"""
 
-        # while not self.client.running:
-        #     time.sleep(0.5)
-        # print(f'Клиент запущен')
-        # while self.client.get == None:
-        #     time.sleep(0.5)
-        # print(self.client.get)
+        self.start_client()
         self.contact_window.setWindowTitle(f'Контакты {self.name.text()}')
         time.sleep(1)
 
@@ -95,6 +95,8 @@ class AuthWindow(QWidget):
             self.client.authentication()
 
     def registration(self):
+        """Метод проводящий регистрацию пользователя"""
+
         self.start_client()
         while not self.client.running:
             time.sleep(0.5)
@@ -103,6 +105,8 @@ class AuthWindow(QWidget):
             self.client.registration()
 
     def message_server(self, value: str) -> QMessageBox:
+        """Метод принимающий сигналы из потока UserClient()"""
+
         if value in ["Вход выполнен", "Регистрация успешна"]:
             global session
             session = init_db(self.name.text())
@@ -115,23 +119,20 @@ class AuthWindow(QWidget):
 
         return QMessageBox.critical(self, "Предупреждение", value, QMessageBox.Ok)
 
-
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         self.client.exit_msg()
 
 
 class ContactWindow(QWidget):
+    """ Класс создающий окно контактов пользователя"""
+
     username = None
     use_client = None
 
     def __init__(self):
         super().__init__()
         self.add_show = ContactAdd(self)
-        # self.add_show.setWindowModality(QtCore.Qt.WindowModal)
-
         self.setWindowTitle(f'Контакты {self.username}')
-        # self.setGeometry(100, 100, 600, 250)
-
         self.contacts = QtWidgets.QListWidget()
         self.contacts.itemDoubleClicked.connect(self.chat)
 
@@ -160,9 +161,13 @@ class ContactWindow(QWidget):
     def chat(self):
         itemNumber = self.contacts.currentRow()
         item = self.contacts.item(itemNumber).text()
-        self.item_chat = ChatWindow(self, contact_name=item[:19].strip())
+        ChatWindow(self, contact_name=item[:19].strip())
 
     def contact_list(self):
+        """Метод получает список контактов и новых сообщений из БД.
+         Обновляет информацию о них в окне контактов пользователя.
+        """
+
         contact = session.query(UserContact)
         while True:
             if contact.count() < self.contacts.count():
@@ -185,64 +190,46 @@ class ContactWindow(QWidget):
                     self.contacts.item(_).setFont(self.defaultfont)
 
     def show_list(self):
-        self.timer = QTimer()
-        self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.contact_list)
-        self.timer.start()
+        """Метод создает и запускает таймер для отслеживания состояния контактов (списка контактов и новых сообщений)"""
+
+        timer = QTimer()
+        timer.setInterval(1000)
+        timer.timeout.connect(self.contact_list)
+        timer.start()
 
     def del_contact(self):
+        """Метод запускающий функционал удаления контакта"""
+
         itemNumber = self.contacts.currentRow()
         item = self.contacts.item(itemNumber).text()
         self.use_client.del_contact(item[:19].strip())
 
     def add_contact(self, name: str):
+        """Метод запускающий функционал добавления контакта"""
+
         self.use_client.add_contact(name)
         self.add_show.hide()
 
     def show_add_window(self):
+        """Метод открывает диалог добавления контакта"""
+
         self.add_show.show()
 
-    def info(self, value):
+    def info(self, value: str):
+        """Метод принимающий сигналы из потока UserClient()"""
+
         return QMessageBox.information(self, "Предупреждение", value, QMessageBox.Ok)
 
-
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        print("Написать серверу, что пользователь отключается!")
-        print("Закрываюсь.....")
         self.use_client.exit_msg()
-
-# class Info(QtWidgets.QDialog):
-#
-#     def __init__(self):
-#         super().__init__()
-#         self.resize(311, 151)
-#         self.groupBox = QtWidgets.QGroupBox(self)
-#         self.groupBox.setGeometry(QtCore.QRect(0, 0, 311, 151))
-#         self.groupBox.setTitle("")
-#         self.lable1 = QtWidgets.QLabel(self.groupBox)
-#         self.lable1.setGeometry(QtCore.QRect(20, 40, 71, 61))
-#         self.pix = QPixmap('info.jpg')
-#         self.lable1.setPixmap(self.pix.scaled(self.lable1.width(), self.lable1.height(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation))
-#
-#
-#         self.label = QtWidgets.QLabel(self.groupBox)
-#         self.label.setGeometry(QtCore.QRect(110, 40, 171, 61))
-#         self.label.setWordWrap(True)
-#
-#         self.pushButton = QtWidgets.QPushButton(self.groupBox)
-#         self.pushButton.setGeometry(QtCore.QRect(110, 120, 75, 23))
-#         self.pushButton.setText('OK')
-#         self.pushButton.clicked.connect(self.close)
-#
-#     def show_info(self, text):
-#         self.label.setText(str(text))
-#         self.show()
 
 
 class ContactAdd(QtWidgets.QDialog):
-    def __init__(self, main):
-        super().__init__(main)
-        self.contact = main
+    """ Класс создающий диалог добавления контакта"""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self.contact = root
         self.setWindowTitle('Добавить контакт')
         self.line_edit = QtWidgets.QLineEdit()
 
@@ -256,37 +243,41 @@ class ContactAdd(QtWidgets.QDialog):
         self.setLayout(self.layout)
 
     def add(self):
+        """Метод запускающий функционал добавления контакта"""
+
         username = self.line_edit.text()
         self.contact.add_contact(username)
 
 
 class ChatWindow(QtWidgets.QDialog):
-    def __init__(self, main, contact_name=None):
-        super().__init__(main)
+    """ Класс создающий окно чата с контактом"""
+
+    def __init__(self, root: QtWidgets.QWidget, contact_name=None):
+        super().__init__(root)
         self.contact = contact_name
-        self.main = main
+        self.main = root
         self.setWindowTitle(f'Чат с {contact_name}')
 
         self.chat = QtWidgets.QListWidget()
+        self.chat.setWordWrap(True)
+        self.chat.setTextElideMode(QtCore.Qt.ElideNone)
         self.chat_history()
 
-        self.message = QtWidgets.QPlainTextEdit()
+        self.message = QtWidgets.QLineEdit()
 
         self.send = QtWidgets.QPushButton()
         self.send.setText('send')
-        self.send.setIcon(QIcon('play.png'))
+        self.send.setIcon(QIcon('static/play.png'))
         self.send.clicked.connect(self.send_msg)
 
-        self.mainlaout = QtWidgets.QVBoxLayout()
-        self.hlaout = QtWidgets.QHBoxLayout()
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.setSpacing(10)
 
-        self.hlaout.addWidget(self.message)
-        self.hlaout.addWidget(self.send)
+        self.grid.addWidget(self.chat, 0, 0, 5, 7)
+        self.grid.addWidget(self.message, 5, 0, 1, 6)
+        self.grid.addWidget(self.send, 5, 6)
 
-        self.mainlaout.addWidget(self.chat)
-        self.mainlaout.addLayout(self.hlaout)
-
-        self.setLayout(self.mainlaout)
+        self.setLayout(self.grid)
 
         self.refresh = QTimer()
         self.refresh.setInterval(1000)
@@ -294,8 +285,9 @@ class ChatWindow(QtWidgets.QDialog):
         self.refresh.start()
         self.show()
 
-
     def chat_history(self):
+        """Метод отображает историю переписки с пользователем в окне чата"""
+
         messagebox = session.query(MessageHistory).filter(
             or_(MessageHistory.msg_to == self.contact, MessageHistory.msg_from == self.contact))
 
@@ -314,10 +306,11 @@ class ChatWindow(QtWidgets.QDialog):
             else:
                 item.setTextAlignment(2)
                 self.chat.addItem(item)
-
-
+            self.chat.scrollToItem(item)
 
     def refresh_chat(self):
+        """Метод обновляет историю переписку в окне чата"""
+
         if self.isVisible():
             messagebox = session.query(MessageHistory).filter_by(readed=0)
             if messagebox.count() > 0:
@@ -332,11 +325,14 @@ class ChatWindow(QtWidgets.QDialog):
                             item.setTextAlignment(2)
                             self.chat.addItem(item)
                         _.readed = 1
+                        self.chat.scrollToItem(item)
             session.commit()
 
     def send_msg(self):
-        if self.message.toPlainText().strip() != '':
-            self.main.use_client.send_msg(self.message.toPlainText(), self.contact)
+        """Метод запускает функционал отправки сообщения пользователю"""
+
+        if self.message.text().strip() != '':
+            self.main.use_client.send_msg(self.message.text(), self.contact)
             self.message.clear()
 
 

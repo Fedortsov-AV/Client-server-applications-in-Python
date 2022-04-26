@@ -1,11 +1,13 @@
 import logging
+import socket
 import sys
-
-from PyQt5.QtWidgets import QMessageBox
-
 import log.server_log_config
 import log.client_log_config
 from functools import wraps
+
+from PyQt5.QtWidgets import QMessageBox
+
+from common.variables import AUTH, REG
 
 if sys.argv[0].find('client.py') == -1:
     logger = logging.getLogger('server')
@@ -13,11 +15,33 @@ else:
     logger = logging.getLogger('client')
 
 
+def login_required(func):
+    """Декоратор, проверяющий авторизацию клиента на сервере.
+    Пропускает PRESENCE, AUTH, REG сообщения. Для остальных сообщений проверят наличие
+    сокета клиента в dict подключенных к серверу пользователей.
+    """
+
+    def wrap(*args, **kwargs):
+        from server import Server
+        from common.variables import ACTION, PRESENCE
+        if isinstance(args[0], Server):
+            for arg in args:
+                if isinstance(arg, dict):
+                    if ACTION in arg and arg[ACTION] in (PRESENCE, AUTH, REG):
+                        return func(*args, **kwargs)
+
+                if isinstance(arg, socket.socket):
+                    for client in args[0].clients_dict:
+                        if args[0].clients_dict[client] == arg:
+                            return func(*args, **kwargs)
+        return
+
+    return wrap
+
+
 def logs(func):
-    """
-    Декоратор для вывода в лог сообщения
-    с указанием функции вызвавшей декарируемую функцию
-    """
+    """Декоратор для вывода в лог сообщения
+    с указанием функции вызвавшей декарируемую функцию"""
 
     @wraps(func)
     def wrap(*args, **kwargs):
@@ -37,26 +61,35 @@ def logs(func):
 
 
 def verify_edit(func):
+    """Декоратор находит все поля типа *Edit и проверяет данные в них
+
+    :returns: В случае успеха возвращает результат декорируемой функции.
+    Если поля пустые или содержат недопустимые данные возвращает QMessageBox
     """
-    Декоратор проверяющий авторизованность пользователя
-    для выполнения той или иной функции
-    :param func:
-    :return:
-    """
+
     def wrap(self):
         for key in self.__dict__:
             if 'QLineEdit' in str(self.__dict__[key]):
                 if self.__dict__[key].text() == '':
-                    return QMessageBox.critical(self, "Предупреждение", "Имя и пароль не могут быть пустымы!", QMessageBox.Ok)
+                    return QMessageBox.critical(self,
+                                                "Предупреждение",
+                                                "Имя и пароль не могут быть пустыми!",
+                                                QMessageBox.Ok)
                 if len(self.__dict__[key].text()) < 3:
-                    return QMessageBox.critical(self, "Предупреждение", "Длина имени и пароля должны быть не менее 3х символов!", QMessageBox.Ok)
+                    return QMessageBox.critical(self,
+                                                "Предупреждение",
+                                                "Длина имени и пароля должны быть не менее 3х символов!",
+                                                QMessageBox.Ok)
                 for _ in (';', ':', '==', '"'):
                     if _ in self.__dict__[key].text():
-                        return QMessageBox.critical(self, "Предупреждение", f"Имя или пароль содержат недопустимый символ \" {_} \"!", QMessageBox.Ok)
+                        return QMessageBox.critical(self,
+                                                    "Предупреждение",
+                                                    f"Имя или пароль содержат недопустимый символ \" {_} \"!",
+                                                    QMessageBox.Ok)
         res = func(self)
         return res
-    return wrap
 
+    return wrap
 
 
 if __name__ == '__main__':

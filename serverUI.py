@@ -1,3 +1,5 @@
+"""Модуль создает графическую оболочку для сервера"""
+
 import sys
 from datetime import datetime
 from time import sleep
@@ -13,6 +15,8 @@ from server_db import User, UserHistory, init_db
 
 
 class MainWindow(QMainWindow):
+    """Класс создающий основное окно"""
+
     path_bd = 'C:/Users/User/PycharmProjects/Client-server/DateBase/'
     file_name_bd = 'serv_db.db3'
 
@@ -64,7 +68,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.table_widget)
 
         # Формируем обрабатываемые действия
-        exitAction = QAction(QIcon('exit.png'), 'Exit', self)
+        exitAction = QAction(QIcon('static/exit.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(self.close)
@@ -84,12 +88,12 @@ class MainWindow(QMainWindow):
         setting_server.setStatusTip('Настройка сервера')
         setting_server.triggered.connect(self.win3)
 
-        start_server = QAction(QIcon('play.png'), 'Запустить сервер', self)
+        start_server = QAction(QIcon('static/play.png'), 'Запустить сервер', self)
         start_server.setShortcut('Ctrl+P')
         start_server.setStatusTip('Запуск сервера')
         start_server.triggered.connect(self.run_serv)
 
-        stop_server = QAction(QIcon('stop.png'), 'Остановить сервер', self)
+        stop_server = QAction(QIcon('static/stop.png'), 'Остановить сервер', self)
         stop_server.setShortcut('Ctrl+S')
         stop_server.setStatusTip('Остановить сервер')
         stop_server.triggered.connect(self.stop_server)
@@ -129,18 +133,24 @@ class MainWindow(QMainWindow):
         self.statuslable3.setText('Сервер остановлен')
 
     def win2(self):
+        """Метод отображает окно с историей подключений пользователей"""
+
         if self.window2.isVisible():
             self.window2.hide()
         else:
             self.window2.show()
 
     def win1(self):
+        """Метод отображает окно с активными пользователями"""
+
         if self.window1.isVisible():
             self.window1.hide()
         else:
             self.window1.show()
 
     def win3(self):
+        """Метод отображающий окно настроек сервера"""
+
         if self.window3.isVisible():
             self.window3.hide()
         else:
@@ -148,7 +158,9 @@ class MainWindow(QMainWindow):
             self.window3.server = self.server
 
     def maintable(self):
-        # print(self.session)
+        """Метод обновляет данные в основной таблице, а так же в таблицах активные пользователи
+           и история пользователей если они отображаются на экране"""
+
         activ_users = self.session.query(User)
         self.table_widget.clearContents()
         self.table_widget.setRowCount(activ_users.count())
@@ -199,29 +211,36 @@ class MainWindow(QMainWindow):
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
 
     def run_serv(self):
+        """Метод запускающий сервер"""
+
         self.statuslable3.setText('Сервер запущен')
         self.server.session = self.session
         if not self.server.running:
             self.server.ADDRES = self.window3.lineEdit_3.text()
             self.server.PORT = int(self.window3.lineEdit_4.text())
-
             self.server.start()
-            # self.server.initSRV()
 
     def stop_server(self):
+        """Метод останавливающий сервер"""
+
         if self.server.running:
             self.server.running = False
             sleep(1)
             self.statuslable3.setText('Сервер остановлен')
 
     def finish(self, value):
+        """Метод обрабатывает сигналы от сервера и добавляет их в статус бар"""
+
         self.statuslable2.setText(value)
 
     def new_session(self):
+        """Метод создает сессию в БД сервера"""
+
         self.session = init_db(self.path_bd, self.file_name_bd)
 
 
 class ListUsers(QWidget):
+    """Клас создает каркас окна для списка активных пользователей и истории подключений"""
 
     def __init__(self):
         super().__init__()
@@ -254,10 +273,11 @@ class ListUsers(QWidget):
 
 
 class SettingServer(QtWidgets.QDialog):
-    def __init__(self, MainWindow, **kwargs):
-        super().__init__(MainWindow, **kwargs)
-        self.main = MainWindow
-        self.server = None
+    """Класс создает окно настроек сервера"""
+
+    def __init__(self, main_window, **kwargs):
+        super().__init__(main_window, **kwargs)
+        self.main = main_window
         self.setGeometry(QtCore.QRect(100, 100, 400, 139))
         self.setWindowTitle('Настройки сервера')
 
@@ -292,8 +312,6 @@ class SettingServer(QtWidgets.QDialog):
         self.pushButton2.setToolTip('Запустить сервер')
         self.pushButton2.clicked.connect(self.run_server)
 
-        # run.triggered.connect(self.run_serv)
-
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -322,12 +340,15 @@ class SettingServer(QtWidgets.QDialog):
         self.setLayout(self.verticalLayout)
 
     def use_bd(self):
+        """Метод создает новую сессию БД"""
+
         self.main.path_bd = self.lineEdit.text()
         self.main.file_name_bd = self.lineEdit_2.text()
-        session = init_db(self.lineEdit.text(), self.lineEdit_2.text())
         self.main.new_session()
 
     def brows(self):
+        """Метод создает структуру дерева для кнопки 'обзор'"""
+
         path = QtWidgets.QFileDialog.getOpenFileName()[0]
         self.lineEdit_2.setText(path.split('/')[-1])
         split_list = path.split('/')
@@ -338,43 +359,12 @@ class SettingServer(QtWidgets.QDialog):
         self.lineEdit.setText(text)
 
     def run_server(self):
-        if not self.server.running:
-            self.server.address = self.lineEdit_3.text()
-            self.server.port = int(self.lineEdit_4.text())
-            self.server.initSRV()
+        """Метод запускающий сервер"""
 
-
-# Класс для создания объекта работающего в другом потоке
-# class StartServer(QtCore.QObject):
-#     running = False
-#     port = None
-#     address = None
-#     serv = None
-#
-#     def __init__(self):
-#         super().__init__()
-#         self.serv = Server()
-#         self.thread = QtCore.QThread()
-#         self.moveToThread(self.thread)
-#         self.thread.started.connect(self.run)
-#
-#     def initSRV(self):
-#         # print(f'self.serv in init - {self.serv}')
-#         self.running = True
-#         self.thread.start()
-#
-#
-#     def stop_server(self):
-#         if self.running:
-#             self.serv.flag_socket = False
-#             self.running = False
-#             sleep(1)
-#             self.thread.terminate()
-#
-#     # метод, для старта сервера в отдельном потоке
-#     def run(self):
-#         self.serv.session = session
-#         self.serv.run_server(self.address, self.port)
+        if not self.main.server.running:
+            self.main.server.address = self.lineEdit_3.text()
+            self.main.server.port = int(self.lineEdit_4.text())
+            self.main.run_serv()
 
 
 def main():

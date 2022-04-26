@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+
+<html lang="Ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>server module &#8212; документация Chat 1.0</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/translations.js"></script>
+    <link rel="index" title="Алфавитный указатель" href="genindex.html" />
+    <link rel="search" title="Поиск" href="search.html" />
+    <link rel="next" title="serverUI module" href="serverUI.html" />
+    <link rel="prev" title="meta module" href="meta.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-server">
+<span id="server-module"></span><h1>server module<a class="headerlink" href="#module-server" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="server.Server">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">server.</span></span><span class="sig-name descname"><span class="pre">Server</span></span><a class="headerlink" href="#server.Server" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Базовые классы: <code class="xref py py-class docutils literal notranslate"><span class="pre">QThread</span></code></p>
+<p>Класс сервера, запускает отдельный поток для обработки поступающих сообщений</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.ADDRES">
+<span class="sig-name descname"><span class="pre">ADDRES</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></em><a class="headerlink" href="#server.Server.ADDRES" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.PORT">
+<span class="sig-name descname"><span class="pre">PORT</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#server.Server.PORT" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Дескриптор для проверки номера порта</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.add_contact">
+<span class="sig-name descname"><span class="pre">add_contact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_contact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#server.Server.add_contact" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод добавления контакта пользователю</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.clients">
+<span class="sig-name descname"><span class="pre">clients</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#server.Server.clients" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.clients_dict">
+<span class="sig-name descname"><span class="pre">clients_dict</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#server.Server.clients_dict" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.contact_list">
+<span class="sig-name descname"><span class="pre">contact_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#server.Server.contact_list" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод формирующий список контактов пользователя</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.delete_contact">
+<span class="sig-name descname"><span class="pre">delete_contact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user_contact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#server.Server.delete_contact" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод удаления контакта пользователя</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.finish">
+<span class="sig-name descname"><span class="pre">finish</span></span><a class="headerlink" href="#server.Server.finish" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.message_list">
+<span class="sig-name descname"><span class="pre">message_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="headerlink" href="#server.Server.message_list" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.my_socket">
+<span class="sig-name descname"><span class="pre">my_socket</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">socket.socket</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#server.Server.my_socket" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.parse_addres_in_argv">
+<span class="sig-name descname"><span class="pre">parse_addres_in_argv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#server.Server.parse_addres_in_argv" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод парсинга ip-адреса из командной строки</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.parse_port_in_argv">
+<span class="sig-name descname"><span class="pre">parse_port_in_argv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#server.Server.parse_port_in_argv" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод парсинга номера порта из командной строки</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.parsing_msg">
+<span class="sig-name descname"><span class="pre">parsing_msg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#server.Server.parsing_msg" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.registration">
+<span class="sig-name descname"><span class="pre">registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_key_y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_key_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">open_key_p</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#server.Server.registration" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод регистрации пользователя</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.response_user">
+<span class="sig-name descname"><span class="pre">response_user</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#server.Server.response_user" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод авторизации пользователя</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#server.Server.run" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Основной метод запуска потока, делает привязку созданного сокета и с помощью select
+постоянно прослушивает всех подключенных пользователей</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="server.Server.run_socket">
+<span class="sig-name descname"><span class="pre">run_socket</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#server.Server.run_socket" title="Ссылка на это определение">¶</a></dt>
+<dd><p>Метод инициализации сокета</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.running">
+<span class="sig-name descname"><span class="pre">running</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#server.Server.running" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="server.Server.session">
+<span class="sig-name descname"><span class="pre">session</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#server.Server.session" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="server.main">
+<span class="sig-prename descclassname"><span class="pre">server.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#server.main" title="Ссылка на это определение">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Chat</a></h1>
+
+
+
+
+
+
+
+
+<h3>Навигация</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Client-server</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="ClientGUI.html">ClientGUI module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Unittest.html">Unittest package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client.html">client module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client_db.html">client_db module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="common.html">common package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decorator.html">decorator module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="descriptor.html">descriptor module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lancher.html">lancher module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="log.html">log package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="meta.html">meta module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">server module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="serverUI.html">serverUI module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="server_db.html">server_db module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">Client-server</a><ul>
+      <li>Previous: <a href="meta.html" title="предыдущая глава">meta module</a></li>
+      <li>Next: <a href="serverUI.html" title="следующая глава">serverUI module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Быстрый поиск</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Искать" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, Fedortsov Aleksandr.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.0.0+/b2c9ced</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/server.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
