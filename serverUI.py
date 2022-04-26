@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, session):
         super().__init__()
+        self.setWindowTitle('Управление сервером')
         self.session = session
         self.server = Server()
         self.server.finish.connect(self.finish)

@@ -6,7 +6,6 @@ import logging
 import random
 import sys
 import time
-import log.client_log_config
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
 
@@ -17,8 +16,8 @@ from common.utils import send_message, get_message
 from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
-from decorator import logs
-from meta import ClientVerifier
+from common.decorator import logs
+from common.meta import ClientVerifier
 
 logger = logging.getLogger('client')
 

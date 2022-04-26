@@ -1,6 +1,4 @@
-import hmac
 import logging
-import os
 import sys
 import time
 from select import select
@@ -12,11 +10,10 @@ from common.utils import get_message, send_message
 from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
-from decorator import logs, login_required
-from descriptor import SocketPort
-from meta import ServerVerifier
+from common.decorator import logs, login_required
+from common.descriptor import SocketPort
+from common.meta import ServerVerifier
 from server_db import User, UserContact, UserHistory
-import log.server_log_config
 
 srv_log = logging.getLogger('server')
 
@@ -104,7 +101,7 @@ class Server(QtCore.QThread):
                             send_message(ANS_200, sock)
                             return
                         ANS_202[ALERT] = 'Контакт успешно добавлен'
-                        self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]}  для клиента - {input_date[ACCOUNT_NAME]}')
+                        self.finish.emit(f'Добавлен контакт {input_date[CONTACT_NAME]} для клиента - {input_date[ACCOUNT_NAME]}')
                         ANS_202[CONTACT] = self.contact_list(input_date[ACCOUNT_NAME])
                         send_message(ANS_202, sock)
                     return
@@ -185,8 +182,6 @@ class Server(QtCore.QThread):
         """Основной метод запуска потока, делает привязку созданного сокета и с помощью select
         постоянно прослушивает всех подключенных пользователей"""
 
-        # self.parse_addres_in_argv(sys.argv)
-        # self.parse_port_in_argv(sys.argv)
         with self.run_socket() as s:
             s.settimeout(0.5)
             srv_log.info(f'Сокет будет привязан к  {(self.ADDRES, self.PORT)}')
@@ -195,26 +190,27 @@ class Server(QtCore.QThread):
             self.clients = []
             self.message_list = []
             while self.running:
-                # print(self.running)
-                wait = 0
-                write = []
-                read = []
-                try:
-                    try:
-                        client, addr = self.my_socket.accept()
-                    except Exception as e:
-                        pass
-                        # print(f'Exeption {e} in acept')
 
-                    else:
-                        srv_log.info(f"Запрос на соединение от {addr}")
-                        self.clients.append(client)
-                    read, write, error = select(self.clients, self.clients, [], wait)
-                    srv_log.debug(f'Write - {len(write)}')
-                    srv_log.debug(f'Read - {len(read)}')
-                    srv_log.debug(f'message_list - {self.message_list}')
+                wait: int = 0
+                write: list = []
+                read: list = []
+
+                try:
+                    client, addr = self.my_socket.accept()
                 except Exception as e:
-                    print(f'Exeption {e} in select')
+                    pass
+                else:
+                    srv_log.info(f"Запрос на соединение от {addr}")
+                    self.clients.append(client)
+                finally:
+                    try:
+                        read, write, error = select(self.clients, self.clients, [], wait)
+                        srv_log.debug(f'Write - {len(write)}')
+                        srv_log.debug(f'Read - {len(read)}')
+                        srv_log.debug(f'message_list - {self.message_list}')
+                    except Exception as e:
+                        if not OSError:
+                            print(f'Exeption {e} in select')
 
                 if read:
                     for s_client in read:

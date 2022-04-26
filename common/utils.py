@@ -6,9 +6,9 @@ import socket
 import sys
 
 sys.path.append(os.path.join(os.getcwd(), '..'))
-from common.variables import MAX_LEN_MSG, ENCODE, ANS_104, ANS_105, ANS_400
+from common.variables import MAX_LEN_MSG, ENCODE, ANS_104, ANS_400
 
-from decorator import logs
+from common.decorator import logs
 
 
 @logs
@@ -29,7 +29,7 @@ def send_message(msg: dict, sock: socket.socket) -> bool:
                 return True
             raise TypeError
         raise TypeError
-    except Exception as e:
+    except Exception:
         return False
     finally:
         if sys.exc_info()[0] in (TypeError, ValueError) and sock:

@@ -12,7 +12,7 @@ from sqlalchemy import or_
 
 from client import UserClient
 from client_db import init_db, UserContact, MessageHistory
-from decorator import verify_edit
+from common.decorator import verify_edit
 
 
 class AuthWindow(QWidget):
