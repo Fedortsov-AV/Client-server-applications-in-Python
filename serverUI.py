@@ -10,21 +10,23 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QAction, QApplication, QTableWidget, QTableWidgetItem, QComboBox, QLabel, \
     QWidget
 
-from server import Server
+from server import Server, parse_port_in_argv, parse_addres_in_argv
 from server_db import User, UserHistory, init_db
+from configparser import ConfigParser
 
 
 class MainWindow(QMainWindow):
     """Класс создающий основное окно"""
 
-    path_bd = 'C:/Users/User/PycharmProjects/Client-server/DateBase/'
-    file_name_bd = 'serv_db.db3'
+    path_bd: str = ''
+    file_name_bd: str = ''
 
     def __init__(self, session):
         super().__init__()
         self.setWindowTitle('Управление сервером')
         self.session = session
         self.server = Server()
+
         self.server.finish.connect(self.finish)
 
         # Формируем окна Активные пользователи и История пользователей
@@ -56,6 +58,7 @@ class MainWindow(QMainWindow):
 
         self.window3 = SettingServer(self)
         self.window3.setWindowModality(QtCore.Qt.WindowModal)
+
 
         # Формируем таймер для обновления главного списка
         self.timer = QTimer()
@@ -226,7 +229,7 @@ class MainWindow(QMainWindow):
 
         if self.server.running:
             self.server.running = False
-            sleep(1)
+            sleep(0.5)
             self.statuslable3.setText('Сервер остановлен')
 
     def finish(self, value):
@@ -369,12 +372,35 @@ class SettingServer(QtWidgets.QDialog):
 
 
 def main():
-    path_bd = 'DateBase/'
-    file_name_bd = 'serv_db.db3'
+    """Основной цикл сервера.
+    Получает данные из файла server_config.ini, а так же проверяет
+    параметры командной строки. Если в командной строке установлен адрес или порт
+    отвечающие критериям, то использует их!"""
+
+    config = ConfigParser()
+    config.read('server_config.ini')
+
     global session
-    session = init_db(path_bd, file_name_bd)
+
+    session = init_db(config['DataBase']['PATH'], config['DataBase']['BD_FILENAME'])
+
     app = QApplication(sys.argv)
     main = MainWindow(session)
+
+    main.path_bd = config['DataBase']['PATH']
+    main.file_name_bd = config['DataBase']['BD_FILENAME']
+
+    PORT = parse_port_in_argv(sys.argv)
+    ADDRES = parse_addres_in_argv(sys.argv)
+    main.window3.lineEdit_4.setText(config['Server']['PORT'])
+    main.window3.lineEdit_3.setText(config['Server']['ADDRES'])
+
+    if PORT and PORT != config['Server']['PORT']:
+        main.window3.lineEdit_4.setText(PORT)
+
+    if ADDRES and ADDRES != config['Server']['ADDRES']:
+        main.window3.lineEdit_3.setText(ADDRES)
+
     main.show()
     sys.exit(app.exec_())
 

@@ -8,10 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database
 
 
-def init_db(name: str):
+def init_db(name: str, path: str):
     """Функция инициализирующая сессию клиента."""
 
-    engine = create_engine(f'sqlite:///DateBase/client_db_{name}.db3', echo=False, pool_recycle=7200,
+    engine = create_engine(f'sqlite:///{path}client_db_{name}.db3', echo=False, pool_recycle=7200,
                            connect_args={'check_same_thread': False})
     if not database_exists(engine.url):
         create_database(engine.url)
@@ -19,6 +19,7 @@ def init_db(name: str):
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
+    print('Создал и вернул сессию')
     return session
 
 

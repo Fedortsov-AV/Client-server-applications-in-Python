@@ -9,14 +9,17 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QApplication, QMessageBox
 from sqlalchemy import or_
+from configparser import ConfigParser
 
-from client import UserClient
+from client import UserClient, parse_port_in_cmd, parse_addres_in_cmd
 from client_db import init_db, UserContact, MessageHistory
 from common.decorator import verify_edit
 
 
 class AuthWindow(QWidget):
     """ Класс создающий окно авторизации"""
+
+    DB_PATH: str = ''
 
     def __init__(self):
         super().__init__()
@@ -79,8 +82,6 @@ class AuthWindow(QWidget):
         if not self.client.running:
             self.client.user_name = self.name.text()
             self.client._password = self.passworld.text()
-            self.client.port = 7777
-            self.client.addres = '127.0.0.1'
             self.client.messeg_client.connect(self.message_server)
             self.client.start()
 
@@ -89,10 +90,12 @@ class AuthWindow(QWidget):
 
         self.start_client()
         self.contact_window.setWindowTitle(f'Контакты {self.name.text()}')
-        time.sleep(1)
+        time.sleep(0.5)
 
         if self.client.running:
             self.client.authentication()
+            if not self.client.session:
+                self.init_bd_session()
 
     def registration(self):
         """Метод проводящий регистрацию пользователя"""
@@ -103,15 +106,19 @@ class AuthWindow(QWidget):
         print(f'Клиент запущен')
         if self.client.running:
             self.client.registration()
+            if not self.client.session:
+                self.init_bd_session()
+
+    def init_bd_session(self):
+        pass
 
     def message_server(self, value: str) -> QMessageBox:
         """Метод принимающий сигналы из потока UserClient()"""
 
         if value in ["Вход выполнен", "Регистрация успешна"]:
             global session
-            session = init_db(self.name.text())
+            session = init_db(self.name.text(), self.DB_PATH)
             self.client.session = session
-
             self.contact_window.show_list()
             self.contact_window.show()
             self.hide()
@@ -167,35 +174,36 @@ class ContactWindow(QWidget):
         """Метод получает список контактов и новых сообщений из БД.
          Обновляет информацию о них в окне контактов пользователя.
         """
+        print('Контакт лист')
+        if session:
+            contact = session.query(UserContact)
+            while True:
+                if contact.count() < self.contacts.count():
+                    self.contacts.clear()
+                    continue
+                elif contact.count() > self.contacts.count():
+                    self.contacts.addItem(QtWidgets.QListWidgetItem(''))
+                    continue
+                break
+            for _ in range(contact.count()):
+                contact_name = str(contact[_].contact)
+                message = session.query(MessageHistory).filter_by(msg_to=contact[_].contact, readed=0)
 
-        contact = session.query(UserContact)
-        while True:
-            if contact.count() < self.contacts.count():
-                self.contacts.clear()
-                continue
-            elif contact.count() > self.contacts.count():
-                self.contacts.addItem(QtWidgets.QListWidgetItem(''))
-                continue
-            break
-        for _ in range(contact.count()):
-            contact_name = str(contact[_].contact)
-            message = session.query(MessageHistory).filter_by(msg_to=contact[_].contact, readed=0)
-
-            newitem = f'{contact_name.ljust(20, " ")}({message.count()})'
-            if newitem != self.contacts.item(_).text():
-                self.contacts.item(_).setText(newitem)
-                if message.count() != 0:
-                    self.contacts.item(_).setFont(self.boldfont)
-                else:
-                    self.contacts.item(_).setFont(self.defaultfont)
+                newitem = f'{contact_name.ljust(20, " ")}({message.count()})'
+                if newitem != self.contacts.item(_).text():
+                    self.contacts.item(_).setText(newitem)
+                    if message.count() != 0:
+                        self.contacts.item(_).setFont(self.boldfont)
+                    else:
+                        self.contacts.item(_).setFont(self.defaultfont)
 
     def show_list(self):
         """Метод создает и запускает таймер для отслеживания состояния контактов (списка контактов и новых сообщений)"""
 
-        timer = QTimer()
-        timer.setInterval(1000)
-        timer.timeout.connect(self.contact_list)
-        timer.start()
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.contact_list)
+        self.timer.start()
 
     def del_contact(self):
         """Метод запускающий функционал удаления контакта"""
@@ -336,12 +344,32 @@ class ChatWindow(QtWidgets.QDialog):
             self.message.clear()
 
 
-if __name__ == '__main__':
-    # client = UserClient()
+def main():
+    config = ConfigParser()
+    config.read('client_config.ini')
 
     app = QApplication(sys.argv)
     main = AuthWindow()
+    main.DB_PATH = config['DataBase']['PATH']
+    main.client.DB_PATH = config['DataBase']['PATH']
+
+    PORT = parse_port_in_cmd(sys.argv)
+    ADDRES = parse_addres_in_cmd(sys.argv)
+    main.client.port = config['Client']['PORT']
+    main.client.addres = config['Client']['ADDRES']
+
+
+    if PORT and PORT != config['Client']['PORT']:
+        main.client.port = PORT
+
+    if ADDRES and ADDRES != config['Client']['ADDRES']:
+        main.client.addres = ADDRES
+
     main.show()
-    # chat = ChatWindow(main)
-    # chat.show()
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    main()
+
+

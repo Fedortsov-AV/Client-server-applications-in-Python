@@ -11,13 +11,14 @@ from threading import Thread
 
 from PyQt5 import QtCore
 
-from client_db import MessageHistory, UserContact
+from client_db import MessageHistory, UserContact, init_db
 from common.utils import send_message, get_message
-from common.variables import PASSWORD, TIME, ACCOUNT_NAME, DEFAULT_PORT, DEFAULT_ADR, VALID_ADR, VALID_PORT, ALERT, \
+from common.variables import PASSWORD, TIME, ACCOUNT_NAME, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
 from common.decorator import logs
 from common.meta import ClientVerifier
+
 
 logger = logging.getLogger('client')
 
@@ -37,7 +38,8 @@ class UserClient(QtCore.QThread):
     running: bool = False
     session = None
     socket: socket = None
-    get: Thread = None
+    get = None
+    DB_PATH: str = ''
 
     @logs
     def presence_msg(self) -> dict:
@@ -45,7 +47,6 @@ class UserClient(QtCore.QThread):
 
         self.msg = {}
         dk = hashlib.pbkdf2_hmac('sha256', self._password.encode('UTF-8'), b'UserClient', 100000)
-        print(binascii.hexlify(dk))
 
         self.msg = {
             ACTION: PRESENCE,
@@ -104,6 +105,7 @@ class UserClient(QtCore.QThread):
                                                                                    'Не удалось добавить контакт',
                                                                                    ]:
                             if input_date[ALERT] == "Вход выполнен":
+                                # self.session = init_db(self.user_name, self.DB_PATH)
                                 with open(f"common/secret_key_{self.user_name}", "r") as f:
                                     self.key = int(f.readline())
                                     self.y = int(f.readline())
@@ -113,7 +115,8 @@ class UserClient(QtCore.QThread):
                             return
 
                         elif input_date[RESPONSE] == 202:
-                            while not self.session:
+                            while self.session == None:
+                                print('wait session')
                                 time.sleep(0.5)
                             for i in input_date[CONTACT]:
                                 result = self.session.query(UserContact).filter_by(contact=i)
@@ -152,50 +155,6 @@ class UserClient(QtCore.QThread):
                 logger.critical(f'Произошла ошибка {sys.exc_info()[0]}')
                 print('Неправильный ответ/JSON-объект')
                 return
-
-    @logs
-    def parse_addres_in_cmd(self, arg: list) -> str:
-        """Метод класса реализующий получение ip-адреса сервера из аргументов командной строки"""
-
-        # logger.debug(f'Получен аргумент {arg}')
-        try:
-            if isinstance(arg, list):
-                if VALID_ADR.findall(arg[1]):
-                    if VALID_ADR.findall(arg[1])[0]:
-                        self.addres = VALID_ADR.findall(arg[1])[0]
-                        logger.info(f'Установлен ip-адрес {self.addres}')
-                        return self.addres
-                    raise ValueError
-                raise IndexError
-            raise TypeError
-        finally:
-            if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
-                self.addres = DEFAULT_ADR
-                logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен ip-адрес {self.addres}')
-                return self.addres
-
-    @logs
-    def parse_port_in_cmd(self, arg: list) -> int:
-        """Метод класса реализующий получение номера порта сервера из аргументов командной строки"""
-
-        logger.debug(f'Получен аргумент {arg}')
-        try:
-            if isinstance(arg, list):
-                if VALID_PORT.findall(arg[2]):
-                    if VALID_PORT.findall(arg[2])[0]:
-                        self.port = int(VALID_PORT.findall(arg[2])[0])
-                        if 1024 < self.port < 65535:
-                            logger.info(f'Установлен порт {self.port}')
-                            return self.port
-                        raise ValueError
-                    raise IndexError
-                raise IndexError
-            raise TypeError
-        finally:
-            if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
-                self.port = int(DEFAULT_PORT)
-                logger.critical(f'Произошла ошибка {sys.exc_info()[0]}, установлен порт {self.port}')
-                return self.port
 
     def get_server_msg(self) -> None:
         """Метод класса реализующий получение сообщения с сервера"""
@@ -310,7 +269,7 @@ class UserClient(QtCore.QThread):
         self.running = True
         try:
             logger.info(f'Сокет будет привязан к  {(self.addres, self.port)}')
-            self.socket.connect((self.addres, self.port))
+            self.socket.connect((self.addres, int(self.port)))
             self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
         except ConnectionRefusedError:
@@ -319,7 +278,7 @@ class UserClient(QtCore.QThread):
             self.messeg_client.emit(str(sys.exc_info()[1]))
 
         else:
-            self.get = Thread(target=self.get_server_msg, daemon=False, name='get')
+            self.get = Thread(target=self.get_server_msg, daemon=True, name='get')
             self.get.start()
 
             while self.running:
@@ -424,6 +383,45 @@ class UserClient(QtCore.QThread):
             f.writelines(f"{self.open_key[1]}\n")
             # В четвертую строку записываем третий блок открытого ключа
             f.writelines(f"{self.open_key[2]}\n")
+
+@logs
+def parse_addres_in_cmd(arg: list) -> str or None:
+    """Метод класса реализующий получение ip-адреса сервера из аргументов командной строки"""
+
+    # logger.debug(f'Получен аргумент {arg}')
+    try:
+        if isinstance(arg, list):
+            if VALID_ADR.findall(arg[1]):
+                if VALID_ADR.findall(arg[1])[0]:
+                    addres = VALID_ADR.findall(arg[1])[0]
+                    logger.info(f'Установлен ip-адрес {addres}')
+                    return addres
+                raise ValueError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            return
+
+@logs
+def parse_port_in_cmd(arg: list) -> int or None:
+    """Метод класса реализующий получение номера порта сервера из аргументов командной строки"""
+
+    logger.debug(f'Получен аргумент {arg}')
+    try:
+        if isinstance(arg, list):
+            if VALID_PORT.findall(arg[2]):
+                if VALID_PORT.findall(arg[2])[0]:
+                    port = int(VALID_PORT.findall(arg[2])[0])
+                    if 1024 > port > 65535:
+                        raise ValueError
+                    return port
+                raise IndexError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            return
 
 
 def main():

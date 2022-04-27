@@ -7,7 +7,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 from PyQt5 import QtCore
 
 from common.utils import get_message, send_message
-from common.variables import DEFAULT_PORT, VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
+from common.variables import VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
 from common.decorator import logs, login_required
@@ -53,6 +53,7 @@ class Server(QtCore.QThread):
                         return
                     ANS_200[ALERT] = "Вход выполнен"
                     send_message(ANS_200, sock)
+                    time.sleep(0.5)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
                     ANS_202[ALERT] = "Отправлен список контактов"
@@ -121,54 +122,6 @@ class Server(QtCore.QThread):
                 srv_log.critical(f'Произошла ошибка: {sys.exc_info()[0]}')
                 send_message(ANS_400, sock)
                 return
-
-    @logs
-    def parse_addres_in_argv(self, arg: list):
-        """Метод парсинга ip-адреса из командной строки"""
-
-        # srv_log.debug(f'Получен аргумент: {arg}')
-        try:
-            if isinstance(arg, list):
-                if '-a' in arg:
-                    if VALID_ADR.findall(arg[sys.argv.index('-a') + 1]):
-                        if VALID_ADR.findall(arg[arg.index('-a') + 1])[0]:
-                            self.ADDRES = VALID_ADR.findall(arg[arg.index('-a') + 1])[0]
-                            srv_log.debug(f'В командной строке задан ip-адрес: {self.ADDRES}')
-                            return self.ADDRES
-                        raise ValueError
-                    raise IndexError
-                raise IndexError
-            raise TypeError
-        finally:
-            if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
-                self.ADDRES = ''
-                srv_log.info(f'Установлен адрес: {self.ADDRES}')
-                return self.ADDRES
-
-    @logs
-    def parse_port_in_argv(self, arg: list):
-        """Метод парсинга номера порта из командной строки"""
-
-        try:
-            if isinstance(arg, list):
-                if '-p' in arg:
-                    if VALID_PORT.findall(arg[sys.argv.index('-p') + 1]):
-                        if VALID_PORT.findall(arg[arg.index('-p') + 1])[0]:
-                            self.PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
-                            if self.PORT > 1024 or self.PORT < 65535:
-                                self.PORT = int(DEFAULT_PORT)
-                                srv_log.debug(f'В командной строке задан порт: {self.PORT}')
-                                return self.PORT
-                            raise ValueError
-                        raise ValueError
-                    raise IndexError
-                raise IndexError
-            raise TypeError
-        finally:
-            if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
-                self.PORT = int(DEFAULT_PORT)
-                srv_log.info(f'Установлен порт: {self.PORT}')
-                return self.PORT
 
     def run_socket(self):
         """Метод инициализации сокета"""
@@ -336,6 +289,48 @@ class Server(QtCore.QThread):
                                                            contact_user.first().open_key_p]
         return dict_contact
 
+
+@logs
+def parse_addres_in_argv(arg: list):
+    """Метод парсинга ip-адреса из командной строки"""
+
+    try:
+        if isinstance(arg, list):
+            if '-a' in arg:
+                if VALID_ADR.findall(arg[sys.argv.index('-a') + 1]):
+                    if VALID_ADR.findall(arg[arg.index('-a') + 1])[0]:
+                        ADDRES = VALID_ADR.findall(arg[arg.index('-a') + 1])[0]
+                        srv_log.debug(f'В командной строке задан ip-адрес: {ADDRES}')
+                        return ADDRES
+                    raise ValueError
+                raise IndexError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            return
+
+
+@logs
+def parse_port_in_argv(arg: list):
+    """Метод парсинга номера порта из командной строки"""
+
+    try:
+        if isinstance(arg, list):
+            if '-p' in arg:
+                if VALID_PORT.findall(arg[sys.argv.index('-p') + 1]):
+                    if VALID_PORT.findall(arg[arg.index('-p') + 1])[0]:
+                        PORT = int(VALID_PORT.findall(arg[arg.index('-p') + 1])[0])
+                        if PORT < 1024 or PORT > 65535:
+                            raise ValueError
+                        return PORT
+                    raise ValueError
+                raise IndexError
+            raise IndexError
+        raise TypeError
+    finally:
+        if sys.exc_info()[0] in (IndexError, TypeError, ValueError):
+            return
 
 def main():
     server = Server()
