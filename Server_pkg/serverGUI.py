@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import QMainWindow, QAction, QApplication, QTableWidget, QT
     QWidget
 
 
-from Server_pkg.server import Server, parse_port_in_argv, parse_addres_in_argv
-from Server_pkg.server_db import User, UserHistory, init_db
+from server import Server, parse_port_in_argv, parse_addres_in_argv
+from server_db import User, UserHistory, init_db
 from configparser import ConfigParser
 
 
@@ -25,6 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self, session):
         super().__init__()
         self.setWindowTitle('Управление сервером')
+        self.setWindowIcon(QIcon('static/Servericon.png'))
         self.session = session
         self.server = Server()
 
@@ -67,8 +68,8 @@ class MainWindow(QMainWindow):
         self.timer.timeout.connect(self.maintable)
 
         # Формируем виджет таблицы
-        self.table_widget = QTableWidget(0, 5)
-        header_labels = ['ID', 'Username', 'IP', 'Last enter', 'TimeOnline']
+        self.table_widget = QTableWidget(0, 4)
+        header_labels = ['ID', 'Username', 'IP', 'Last enter']
         self.table_widget.setHorizontalHeaderLabels(header_labels)
         self.setCentralWidget(self.table_widget)
 
@@ -167,41 +168,45 @@ class MainWindow(QMainWindow):
            и история пользователей если они отображаются на экране"""
 
         activ_users = self.session.query(User)
-        self.table_widget.clearContents()
-        self.table_widget.setRowCount(activ_users.count())
-        for row in range(0, activ_users.count()):
-            history = self.session.query(UserHistory).filter_by(user_id=activ_users[row].id).order_by(
-                UserHistory.login_time.desc())
+        # print(f'{activ_users.count()} != {self.table_widget.rowCount()}')
+        if activ_users.count() != self.table_widget.rowCount():
+            self.table_widget.clearContents()
+            self.table_widget.setRowCount(activ_users.count())
+            for row in range(0, activ_users.count()):
+                history = self.session.query(UserHistory).filter_by(user_id=activ_users[row].id).order_by(
+                    UserHistory.login_time.desc())
 
-            self.table_widget.setItem(row, 0, QTableWidgetItem(str(activ_users[row].id)))
-            self.table_widget.setItem(row, 1, QTableWidgetItem(activ_users[row].username))
-            if history.count() > 0:
-                self.table_widget.setItem(row, 2, QTableWidgetItem(history[0].ip_addres))
-                self.table_widget.setItem(row, 3, QTableWidgetItem(str(history[0].login_time)))
-                # print(f'{activ_users[row].online} - {activ_users[row].username}')
-                if activ_users[row].online == 1:
-                    delta = datetime.now() - history[0].login_time
-                    self.table_widget.setItem(row, 4, QTableWidgetItem(str(delta)))
+                self.table_widget.setItem(row, 0, QTableWidgetItem(str(activ_users[row].id)))
+                self.table_widget.setItem(row, 1, QTableWidgetItem(activ_users[row].username))
+                if history.count() > 0:
+                    self.table_widget.setItem(row, 2, QTableWidgetItem(history[0].ip_addres))
+                    self.table_widget.setItem(row, 3, QTableWidgetItem(str(history[0].login_time)))
+                    # print(f'{activ_users[row].online} - {activ_users[row].username}')
+                    # if activ_users[row].online == 1:
+                    #     delta = datetime.now() - history[0].login_time
+                    #     self.table_widget.setItem(row, 4, QTableWidgetItem(str(delta)))
 
         # Если открыто окно История подключений, обновляем его содержимое
         if self.window2.isVisible():
-            self.window2.tableWidget.clearContents()
             name = self.window2.comboBox.currentText()
             if name == 'Все пользователи':
                 history = self.session.query(UserHistory).order_by(UserHistory.login_time.desc())
             else:
                 history = self.session.query(UserHistory).filter_by(username=name).order_by(
                     UserHistory.login_time.desc())
-            self.window2.tableWidget.setRowCount(history.count())
-            for item in range(0, history.count()):
-                self.window2.tableWidget.setItem(item, 0, QTableWidgetItem(str(history[item].username)))
-                self.window2.tableWidget.setItem(item, 1, QTableWidgetItem(str(history[item].ip_addres)))
-                self.window2.tableWidget.setItem(item, 2, QTableWidgetItem(str(history[item].login_time)))
+            if self.window2.tableWidget.rowCount() != history.count():
+                self.window2.tableWidget.clearContents()
+                self.window2.tableWidget.setRowCount(history.count())
+                for item in range(0, history.count()):
+                    self.window2.tableWidget.setItem(item, 0, QTableWidgetItem(str(history[item].username)))
+                    self.window2.tableWidget.setItem(item, 1, QTableWidgetItem(str(history[item].ip_addres)))
+                    self.window2.tableWidget.setItem(item, 2, QTableWidgetItem(str(history[item].login_time)))
 
         # Если открыто окно Активные пользователи, обновляем его содержимое
         if self.window1.isVisible():
             self.window1.tableWidget.clearContents()
             activ_users = self.session.query(User).filter_by(online=1)
+
             self.window1.tableWidget.clearContents()
             self.window1.tableWidget.setRowCount(activ_users.count())
             for row in range(0, activ_users.count()):
@@ -209,11 +214,14 @@ class MainWindow(QMainWindow):
                     UserHistory.login_time.desc())
                 self.window1.tableWidget.setItem(row, 0, QTableWidgetItem(str(activ_users[row].id)))
                 self.window1.tableWidget.setItem(row, 1, QTableWidgetItem(activ_users[row].username))
+
                 if history.count() > 0:
                     self.window1.tableWidget.setItem(row, 2, QTableWidgetItem(history[0].ip_addres))
                     if activ_users[row].online == 1:
                         delta = datetime.now() - history[0].login_time
                         self.window1.tableWidget.setItem(row, 3, QTableWidgetItem(str(delta)))
+
+
 
     def run_serv(self):
         """Метод запускающий сервер"""
@@ -250,6 +258,7 @@ class ListUsers(QWidget):
     def __init__(self):
         super().__init__()
         # Формируем основное окно
+        self.setWindowIcon(QIcon('static/Servericon.png'))
         self.setGeometry(100, 100, 600, 300)
 
         # Формируем каркас таблицы
@@ -283,6 +292,7 @@ class SettingServer(QtWidgets.QDialog):
     def __init__(self, main_window, **kwargs):
         super().__init__(main_window, **kwargs)
         self.main = main_window
+        self.setWindowIcon(QIcon('static/Servericon.png'))
         self.setGeometry(QtCore.QRect(100, 100, 400, 139))
         self.setWindowTitle('Настройки сервера')
 

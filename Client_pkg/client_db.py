@@ -19,7 +19,6 @@ def init_db(name: str, path: str):
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-    print('Создал и вернул сессию')
     return session
 
 

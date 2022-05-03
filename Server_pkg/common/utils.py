@@ -5,9 +5,9 @@ import os
 import socket
 import sys
 
-sys.path.append(os.path.join(os.getcwd(), '../..'))
-from Server_pkg.common.variables import MAX_LEN_MSG, ENCODE, ANS_104, ANS_400
-from Server_pkg.common.decorator import logs
+# sys.path.append(os.path.join(os.getcwd(), '../..'))
+from .variables import MAX_LEN_MSG, ENCODE, ANS_104, ANS_400, ALERT
+from .decorator import logs
 
 
 
@@ -30,8 +30,6 @@ def send_message(msg: dict, sock: socket.socket) -> bool:
             raise TypeError
         raise TypeError
     except Exception:
-        return False
-    finally:
         if sys.exc_info()[0] in (TypeError, ValueError) and sock:
             return False
 
@@ -70,8 +68,10 @@ def get_message(sock: socket.socket) -> dict:
                 return data
             return ANS_400
         return ANS_400
-    finally:
-        if sys.exc_info()[0] in (TypeError, ValueError):
+    except:
+        if sys.exc_info()[0] in (TypeError, ValueError, KeyError):
             return ANS_400
-        if sys.exc_info()[0] in (ConnectionResetError, OSError):
+        if sys.exc_info()[0] in (ConnectionResetError, OSError, ConnectionAbortedError):
+            ANS_104[ALERT] = sys.exc_info()[0]
+            ANS_104['socket'] = sock
             return ANS_104

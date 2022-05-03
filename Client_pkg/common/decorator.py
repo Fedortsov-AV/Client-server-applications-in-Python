@@ -4,9 +4,9 @@ import sys
 from functools import wraps
 
 from PyQt5.QtWidgets import QMessageBox
-sys.path.append(os.path.join(os.getcwd(), '../..'))
+sys.path.append(os.path.join(os.getcwd(), '..'))
 
-from Client_pkg.log import client_log_config
+from log import client_log_config
 
 
 logger = logging.getLogger('client')

@@ -1,6 +1,6 @@
 """Основной модуль клиента. В нем создается графический интерфейс, а так же
 происходит создание экземпляра UserClient и его запуск"""
-import os
+import logging
 import sys
 import time
 
@@ -12,11 +12,12 @@ from sqlalchemy import or_
 from configparser import ConfigParser
 
 
+from client import UserClient, parse_port_in_cmd, parse_addres_in_cmd
+from client_db import init_db, UserContact, MessageHistory
+from common.decorator import verify_edit
+from log import client_log_config
 
-sys.path.append(os.path.join(os.getcwd(), '../..'))
-from Client_pkg.client import UserClient, parse_port_in_cmd, parse_addres_in_cmd
-from Client_pkg.client_db import init_db, UserContact, MessageHistory
-from Client_pkg.common.decorator import verify_edit
+logger = logging.getLogger('client')
 
 
 class AuthWindow(QWidget):
@@ -31,6 +32,7 @@ class AuthWindow(QWidget):
         self.contact_window.use_client = self.client
 
         self.setWindowTitle('Окно авторизации')
+        self.setWindowIcon(QIcon('static/clienticon.png'))
 
         self.text = QtWidgets.QLabel()
         self.text.setText('Введите ваше имя:')
@@ -49,6 +51,7 @@ class AuthWindow(QWidget):
         self.passworld.password_shown = False
 
         self.auth = QtWidgets.QPushButton()
+        self.auth.setShortcut('Enter')
         self.auth.setText('Войти')
         self.auth.clicked.connect(self.authentication)
 
@@ -104,6 +107,7 @@ class AuthWindow(QWidget):
         """Метод проводящий регистрацию пользователя"""
 
         self.start_client()
+        self.contact_window.setWindowTitle(f'Контакты {self.name.text()}')
         while not self.client.running:
             time.sleep(0.5)
         print(f'Клиент запущен')
@@ -119,6 +123,7 @@ class AuthWindow(QWidget):
         """Метод принимающий сигналы из потока UserClient()"""
 
         if value in ["Вход выполнен", "Регистрация успешна"]:
+            logger.debug(f'Создаю сессию Имя: {self.name.text()} Путь:{self.DB_PATH}')
             global session
             session = init_db(self.name.text(), self.DB_PATH)
             self.client.session = session
@@ -143,6 +148,7 @@ class ContactWindow(QWidget):
         super().__init__()
         self.add_show = ContactAdd(self)
         self.setWindowTitle(f'Контакты {self.username}')
+        self.setWindowIcon(QIcon('static/clienticon.png'))
         self.contacts = QtWidgets.QListWidget()
         self.contacts.itemDoubleClicked.connect(self.chat)
 
@@ -242,6 +248,7 @@ class ContactAdd(QtWidgets.QDialog):
         super().__init__(root)
         self.contact = root
         self.setWindowTitle('Добавить контакт')
+        self.setWindowIcon(QIcon('static/clienticon.png'))
         self.line_edit = QtWidgets.QLineEdit()
 
         self.btn = QtWidgets.QPushButton()
@@ -268,6 +275,7 @@ class ChatWindow(QtWidgets.QDialog):
         self.contact = contact_name
         self.main = root
         self.setWindowTitle(f'Чат с {contact_name}')
+        self.setWindowIcon(QIcon('static/clienticon.png'))
 
         self.chat = QtWidgets.QListWidget()
         self.chat.setWordWrap(True)

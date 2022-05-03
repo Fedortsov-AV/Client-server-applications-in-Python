@@ -8,15 +8,15 @@ from socket import socket, AF_INET, SOCK_STREAM
 from PyQt5 import QtCore
 
 
-from Server_pkg.common.utils import get_message, send_message
-from Server_pkg.common.variables import VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
+from common.utils import get_message, send_message
+from common.variables import VALID_ADR, VALID_PORT, ANS_200, ANS_400, ACTION, USER, TIME, ACCOUNT_NAME, \
     MESSAGE_TEXT, FROM, RESPONSE, ALERT, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, ANS_202, CONTACT, PASSWORD, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
-from Server_pkg.common.decorator import logs, login_required
-from Server_pkg.common.descriptor import SocketPort
-from Server_pkg.common.meta import ServerVerifier
-from Server_pkg.server_db import User, UserContact, UserHistory
-from Server_pkg.log import server_log_config
+from common.decorator import logs, login_required
+from common.descriptor import SocketPort
+from common.meta import ServerVerifier
+from server_db import User, UserContact, UserHistory
+from log import server_log_config
 
 srv_log = logging.getLogger('server')
 
@@ -56,7 +56,7 @@ class Server(QtCore.QThread):
                         return
                     ANS_200[ALERT] = "Вход выполнен"
                     send_message(ANS_200, sock)
-                    time.sleep(0.5)
+                    time.sleep(1)
                     self.clients_dict[input_date[USER][ACCOUNT_NAME]] = sock
                     ANS_202[CONTACT] = self.contact_list(input_date[USER][ACCOUNT_NAME])
                     ANS_202[ALERT] = "Отправлен список контактов"
@@ -86,17 +86,13 @@ class Server(QtCore.QThread):
                     )
                     return
                 elif input_date[ACTION] == EXIT and input_date[ACCOUNT_NAME]:
-                    result = self.session.query(User).filter_by(username=input_date[ACCOUNT_NAME])
-                    result.first().online = 0
-                    self.session.commit()
-                    self.clients_dict.remove(input_date[ACCOUNT_NAME])
-                    srv_log.debug(f"Удалил клиента - {input_date[ACCOUNT_NAME]}")
-                    self.finish.emit(f'Удалил клиента - {input_date[ACCOUNT_NAME]}')
+                    self.user_offline(name=input_date[ACCOUNT_NAME])
                     return
                 elif input_date[ACTION] == ALERT and input_date[RESPONSE] in (104, 105):
                     timeserv = time.strftime('%d.%m.%Y %H:%M', time.localtime(input_date[TIME]))
                     srv_log.info(f'{timeserv} - {input_date[RESPONSE]} : {input_date[ALERT]}')
-                    self.clients.remove(sock)
+                    # self.clients.remove(sock)
+                    self.user_offline(socket=input_date['socket'])
                     return
                 elif input_date[ACTION] == ADD_CONTACT and input_date[CONTACT_NAME] and input_date[ACCOUNT_NAME]:
                     if input_date[CONTACT_NAME] != input_date[ACCOUNT_NAME]:
@@ -120,7 +116,7 @@ class Server(QtCore.QThread):
 
                 raise KeyError
             raise TypeError
-        finally:
+        except:
             if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
                 srv_log.critical(f'Произошла ошибка: {sys.exc_info()[0]}')
                 send_message(ANS_400, sock)
@@ -161,9 +157,9 @@ class Server(QtCore.QThread):
                 finally:
                     try:
                         read, write, error = select(self.clients, self.clients, [], wait)
-                        srv_log.debug(f'Write - {len(write)}')
-                        srv_log.debug(f'Read - {len(read)}')
-                        srv_log.debug(f'message_list - {self.message_list}')
+                        # srv_log.debug(f'Write - {len(write)}')
+                        # srv_log.debug(f'Read - {len(read)}')
+                        # srv_log.debug(f'message_list - {self.message_list}')
                     except Exception as e:
                         if not OSError:
                             print(f'Exeption {e} in select')
@@ -175,7 +171,7 @@ class Server(QtCore.QThread):
                             srv_log.info(f'Сообщение: {data} было отправлено клиентом: {s_client.getpeername()}')
                             self.parsing_msg(data, s_client)
                         except Exception as e:
-                            self.clients.remove(s_client)
+                            self.user_offline(socket=s_client)
                             srv_log.debug(f'Ошибка при получении - {sys.exc_info()[0]}')
                             srv_log.debug(f"Удалил клиента - {s_client}")
 
@@ -184,8 +180,8 @@ class Server(QtCore.QThread):
                     try:
 
                         for message in self.message_list:
-                            print(f'self.clients_dict = {self.clients_dict}')
-                            print(f'message[1] = {message[1]}')
+                            # print(f'self.clients_dict = {self.clients_dict}')
+                            # print(f'message[1] = {message[1]}')
 
                             if message[1] in self.clients_dict:
                                 send_dict = {}
@@ -203,8 +199,9 @@ class Server(QtCore.QThread):
                                 self.message_list.remove(message)
                     except Exception as e:
                         srv_log.info(sys.exc_info()[0])
-                        self.clients.remove(s_client)
-                        del self.clients_dict[message[0]]
+                        self.user_offline(name=message[0])
+                        # self.clients.remove(s_client)
+                        # del self.clients_dict[message[0]]
                         srv_log.debug(f"Удалил клиента - {s_client}")
 
             srv_log.info(f"Закрываю сокет")
@@ -291,6 +288,31 @@ class Server(QtCore.QThread):
                                                            contact_user.first().open_key_g,
                                                            contact_user.first().open_key_p]
         return dict_contact
+
+    def user_offline(self, name: str = None, socket: socket = None):
+        """Метод отображающий отключение полязователя от сервера"""
+
+        if name is None:
+            self.clients.remove(socket)
+            for k, v in self.clients_dict:
+                if v == socket:
+                    name = k
+                    del self.clients_dict[k]
+                    self.clients.remove(name)
+                    break
+        else:
+            self.clients.remove(self.clients_dict[name])
+            try:
+                del self.clients_dict[name]
+            except:
+                print('Нет пользователя?')
+
+        result = self.session.query(User).filter_by(username=name)
+        result.first().online = 0
+        self.session.commit()
+
+        srv_log.debug(f"Удалил клиента - {name}")
+        self.finish.emit(f'Удалил клиента - {name}')
 
 
 @logs

@@ -12,13 +12,13 @@ from threading import Thread
 from PyQt5 import QtCore
 
 from client_db import MessageHistory, UserContact
-from Client_pkg.common.utils import send_message, get_message
-from Client_pkg.common.variables import PASSWORD, TIME, ACCOUNT_NAME, VALID_ADR, VALID_PORT, ALERT, \
+from common.utils import send_message, get_message
+from common.variables import PASSWORD, TIME, ACCOUNT_NAME, VALID_ADR, VALID_PORT, ALERT, \
     ACTION, USER, RESPONSE, MESSAGE_TEXT, FROM, CONTACT_NAME, ADD_CONTACT, DEL_CONTACT, USER_NAME, CONTACT, REG, \
     OPEN_KEY_Y, OPEN_KEY_G, OPEN_KEY_P, SESSION_KEY, PRESENCE, MESSAGE, EXIT
-from Client_pkg.common.decorator import logs
-from Client_pkg.common.meta import ClientVerifier
-from Client_pkg.log import client_log_config
+from common.decorator import logs
+from common.meta import ClientVerifier
+from log import client_log_config
 
 
 logger = logging.getLogger('client')
@@ -107,17 +107,22 @@ class UserClient(QtCore.QThread):
                                                                                    ]:
                             if input_date[ALERT] == "Вход выполнен":
                                 # self.session = init_db(self.user_name, self.DB_PATH)
-                                with open(f"common/secret_key_{self.user_name}", "r") as f:
+                                logger.debug(f'читаю ключи')
+                                with open(f"key/secret_key_{self.user_name}", "r") as f:
                                     self.key = int(f.readline())
                                     self.y = int(f.readline())
                                     self.g = int(f.readline())
                                     self.p = int(f.readline())
-                            self.messeg_client.emit(input_date[ALERT])
-                            return
+                                    logger.debug(f'Прочитал ключи')
+                                self.messeg_client.emit(input_date[ALERT])
+                                return
+                            elif input_date[ALERT] == "Регистрация успешна":
+                                self.messeg_client.emit(input_date[ALERT])
+                                return
 
                         elif input_date[RESPONSE] == 202:
                             while self.session == None:
-                                print('wait session')
+                                # print('wait session')
                                 time.sleep(0.5)
                             for i in input_date[CONTACT]:
                                 result = self.session.query(UserContact).filter_by(contact=i)
@@ -151,17 +156,18 @@ class UserClient(QtCore.QThread):
                     return
                 raise ValueError
             raise TypeError
-        finally:
+        except:
             if sys.exc_info()[0] in (KeyError, TypeError, ValueError):
                 logger.critical(f'Произошла ошибка {sys.exc_info()[0]}')
                 print('Неправильный ответ/JSON-объект')
                 return
+            logger.critical(f'В методе parsing_msg произошла ошибка {sys.exc_info()[0]}')
 
     def get_server_msg(self) -> None:
         """Метод класса реализующий получение сообщения с сервера"""
 
         logger.debug('Жду данные от сервера')
-        print(f'self.socket in get_server_msg - {self.socket}')
+        # print(f'self.socket in get_server_msg - {self.socket}')
         try:
             while True:
                 data = get_message(self.socket)
@@ -375,7 +381,7 @@ class UserClient(QtCore.QThread):
         self.open_key = (self.y, self.g, self.p)
 
         # Записываем в файл для данного пользователя оба ключа
-        with open(f"common/secret_key_{self.user_name}", "w") as f:
+        with open(f"key/secret_key_{self.user_name}", "w") as f:
             # В первую строку записываем секретный ключ
             f.writelines(f"{self.key}\n")
             # Во вторую строку записываем первый блок открытого ключа

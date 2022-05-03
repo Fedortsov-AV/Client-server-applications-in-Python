@@ -5,10 +5,10 @@ import sys
 from functools import wraps
 
 from PyQt5.QtWidgets import QMessageBox
+from .variables import AUTH, REG
 
-sys.path.append(os.path.join(os.getcwd(), '../..'))
-from Server_pkg.common.variables import AUTH, REG
-from Server_pkg.log import server_log_config
+sys.path.append(os.path.join(os.getcwd(), '..'))
+from log import server_log_config
 
 if sys.argv[0].find('client.py') == -1:
     logger = logging.getLogger('server')
@@ -23,8 +23,9 @@ def login_required(func):
     """
 
     def wrap(*args, **kwargs):
-        from Server_pkg.server import Server
-        from Server_pkg.common.variables import ACTION, PRESENCE
+        from .variables import ACTION, PRESENCE
+        sys.path.append(os.path.join(os.getcwd(), '..'))
+        from server import Server
         if isinstance(args[0], Server):
             for arg in args:
                 if isinstance(arg, dict):
