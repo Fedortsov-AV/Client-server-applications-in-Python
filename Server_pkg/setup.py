@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name="MyStudyChat_server",
-      version="1.0.0",
+      version="1.0.1",
       description="Сервер для чата",
       author="Aleksandr Fedortsov",
       author_email="aleksandrfedorcov431@gmail.com",
